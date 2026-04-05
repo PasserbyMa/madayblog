@@ -6,6 +6,11 @@ services:
         image: mongo:7.0
         container_name: mablog_mongodb
         restart: always
+        # MCP 연동을 위해 localhost에만 포트 노출 (외부 접근 불가)
+        ports:
+            - "127.0.0.1:27017:27017"
+        # ports 추가 전 원본 (포트 노출 없음):
+        # (ports 항목 없음 — Docker 내부 네트워크에서만 접근 가능)
         volumes:
             - ./mongo_data:/data/db
             - ./backup:/tmp/backup

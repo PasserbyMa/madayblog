@@ -6,6 +6,9 @@ import { useEffect, useState } from 'react';
 import { IStackDocument } from '@/app/api/models/stacks/model_stacks';
 import { CurFormatKORDate } from '../../common/CurFormatKORDate';
 import { IPostDataWithHtml } from '@/app/api/models/posts/model_posts';
+import { getPosts, deletePost } from '@/app/lib/apiClient';
+import { useToast } from '@/app/component/common/useToast';
+import Toast from '@/app/component/common/toast';
 //===
 import MakePage from '../../common/makePage';
 import AboutMe from '@/app/component/pageComponent/main/aboutMe';
@@ -16,67 +19,90 @@ import WriteFormFix from './writeFormFix';
 import GetServerState from '../../common/getServerState';
 import ListDetailComponent from '../list/listDetail';
 import DockerContainersBox from '../../common/getDockerState';
+import ClockWidget from '../../common/clockWidget';
+import GithubActivity from '../../common/githubActivity';
+import CategoryFilter from '../../common/categoryFilter';
 
 //===
-const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtml[]; stackData: IStackDocument[] }) => {
+type ModalType = 'more' | 'recentDetail' | 'add' | 'fix';
+//===
+const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPostDataWithHtml[]; postTotal: number; stackData: IStackDocument[] }) => {
     //===
-    const [isMoreBtnClick, setIsMoreBtnClick] = useState<boolean>(false);
-    const [isRecentBtnClick, setIsRecentBtnClick] = useState<boolean>(false);
-    const [isAddClick, setIsAddBtnClick] = useState<boolean>(false);
-    const [isFixClick, setIsFixClick] = useState<boolean>(false);
+    // 모달 스택: 마지막 항목이 현재 최상단 모달
+    // 예) ['more', 'fix'] → fix가 more 위에 떠 있음, fix 닫으면 more로 복귀
+    const { toast, showToast } = useToast();
+    const [modalStack, setModalStack] = useState<ModalType[]>([]);
+    const activeModal = modalStack[modalStack.length - 1] ?? null;
+    const openModal  = (type: ModalType) => setModalStack(prev => [...prev, type]);
+    const closeModal = () => setModalStack(prev => prev.slice(0, -1));
+    const closeAll   = () => setModalStack([]);
     //===
     const [isLogin, setIsLogin] = useState<boolean>(false);
     //===
+    // more 모달용 현재 페이지 포스트
     const [p_data, setP_Data] = useState<IPostDataWithHtml[]>(postData);
-
+    // 전체 포스트 수 (페이지네이션 계산용)
+    const [total, setTotal] = useState<number>(postTotal);
+    // 대시보드 최신 5개 - 페이지가 바뀌어도 항상 최신 유지
+    const [recentPosts, setRecentPosts] = useState<IPostDataWithHtml[]>(postData.slice(0, 5));
     //===
     const [detail, setDetailData] = useState<IPostDataWithHtml>();
-    //===
-    //데이터 초기화
-    //===
-    useEffect(() => {
-        setP_Data(postData);
-    }, [postData]);
+    const [isPageLoading, setIsPageLoading] = useState(false);
+    const [searchInput, setSearchInput] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
     //===
     const isMobile = useMediaQuery('(max-width: 768px)');
-    //===
     const [curPage, setCurPage] = useState<number>(1);
-
     const perPage = isMobile ? 2 : 7;
-    const totalPage = Math.ceil(p_data.length / perPage);
-
-    const lastIndex = curPage * perPage;
-    const startIndex = lastIndex - perPage;
-    //리스트에 보이는 부분
-    const curPosts = p_data.slice(startIndex, lastIndex);
-    //메인 화면에 보이는 부분
-    const recentPosts = p_data.slice(0, 5);
+    const totalPage = Math.ceil(total / perPage);
     //===
-    //데이터 삭제, 수정에 따른 새로고침 용
+    // 검색어 debounce: 입력 후 300ms 뒤에 searchQuery 반영, 페이지도 1로 리셋
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearchQuery(searchInput);
+            setCurPage(1);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    // curPage / perPage / searchQuery 바뀔 때마다 해당 페이지만 서버에서 fetch
+    useEffect(() => {
+        const fetchPage = async () => {
+            setIsPageLoading(true);
+            const { posts, total } = await getPosts(curPage, perPage, searchQuery);
+            setP_Data(posts);
+            setTotal(total);
+            setIsPageLoading(false);
+        };
+        fetchPage();
+    }, [curPage, perPage, searchQuery]);
+    //===
+    // 추가/삭제 후 새로고침: 1페이지로 돌아가고 최신 5개도 갱신
     const RefreshPostData = async () => {
-        const res = await fetch('/api/controller/GET/posts');
-        const data: IPostDataWithHtml[] = await res.json();
-        setP_Data(data);
+        setCurPage(1);
+        const { posts, total } = await getPosts(1, perPage);
+        setP_Data(posts);
+        setTotal(total);
+        setRecentPosts(posts.slice(0, 5));
     };
     //===
     const DeletePost = async (id: string) => {
-        const check = confirm('real?');
-
-        if (check) {
-            await fetch('/api/controller/DELETE/posts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id }),
-            });
-
+        const check = confirm('삭제하시겠습니까?');
+        if (!check) return;
+        try {
+            await deletePost(id);
+            showToast('포스트가 삭제되었습니다.');
             RefreshPostData();
-            setIsRecentBtnClick(false);
+            closeAll();
             setDetailData(undefined);
-        } else return;
+        } catch (err) {
+            showToast(err instanceof Error ? err.message : '삭제 실패', 'error');
+        }
     };
     //===
     return (
         <div className="dashboardContainer">
+            <Toast {...toast} />
             <header className="dashboardHeader">
                 <h1 className="dashboardTitle">DEV.LOG // SYSTEM STATUS</h1>
                 {/* ======================= */}
@@ -115,7 +141,7 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                         <button
                             className={'dashboardBtn'}
                             onClick={() => {
-                                setIsMoreBtnClick(true);
+                                openModal('more');
                             }}
                         >
                             [more]
@@ -128,20 +154,46 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                             key={v.slug.toString()}
                             onClick={() => {
                                 setDetailData(v);
-                                setIsRecentBtnClick(true);
+                                openModal('recentDetail');
                             }}
                         >
                             {v.title}
                         </div>
                     ))}
                 </div>
+                {/* ======================= */}
+                {/* CLOCK */}
+                {/* ======================= */}
+                <div className="gridItem gridItemClock">
+                    <h2 className="moduleTitle">[CLOCK]</h2>
+                    <ClockWidget />
+                </div>
+                {/* ======================= */}
+                {/* GITHUB_ACTIVITY */}
+                {/* ======================= */}
+                <div className="gridItem">
+                    <h2 className="moduleTitle">[GITHUB_ACTIVITY]</h2>
+                    <GithubActivity />
+                </div>
+                {/* ======================= */}
+                {/* CATEGORY_FILTER */}
+                {/* ======================= */}
+                <div className="gridItem">
+                    <h2 className="moduleTitle">[CATEGORY_FILTER]</h2>
+                    <CategoryFilter
+                        onCategoryClick={(cat) => {
+                            setSearchInput(cat);
+                            openModal('more');
+                        }}
+                    />
+                </div>
             </div>
             {/* ======================= */}
             {/* More -> ADD 버튼 눌렀을 때 */}
             {/* ======================= */}
-            {isAddClick && (
+            {activeModal === 'add' && (
                 <ModalBody
-                    isOpen={isAddClick}
+                    isOpen={true}
                     size="normal"
                     html={
                         <>
@@ -157,7 +209,7 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                                     { name: 'slug', type: 'input' },
                                 ]}
                                 key={'ADD'}
-                                setIsOpen={setIsAddBtnClick}
+                                setIsOpen={(v) => { if (!v) closeModal(); }}
                                 setPData={setP_Data}
                             />
                         </>
@@ -167,9 +219,9 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
             {/* ======================= */}
             {/* 최근 게시물 하나 눌렀을 때 */}
             {/* ======================= */}
-            {isRecentBtnClick && (
+            {modalStack.includes('recentDetail') && (
                 <ModalBody
-                    isOpen={isRecentBtnClick}
+                    isOpen={true}
                     size="normal"
                     html={
                         <>
@@ -194,7 +246,7 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                                 <button
                                     className={'dashboardBtn writeBtn'}
                                     onClick={() => {
-                                        setIsFixClick(true);
+                                        openModal('fix');
                                     }}
                                 >
                                     [FIX]
@@ -202,7 +254,7 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                                 <button
                                     className={'dashboardBtn'}
                                     onClick={() => {
-                                        setIsRecentBtnClick(false);
+                                        closeAll();
                                         setDetailData(undefined);
                                     }}
                                 >
@@ -219,9 +271,9 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
             {/* ======================= */}
             {/* FIX  버튼 눌렀을 때*/}
             {/* ======================= */}
-            {isFixClick && detail && (
+            {activeModal === 'fix' && detail && (
                 <ModalBody
-                    isOpen={isFixClick}
+                    isOpen={true}
                     size="normal"
                     html={
                         <>
@@ -231,7 +283,7 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                             <WriteFormFix
                                 setPData={setP_Data}
                                 setDetailData={setDetailData}
-                                setIsOpen={setIsFixClick}
+                                setIsOpen={(v) => { if (!v) closeModal(); }}
                                 formData={detail}
                                 category={['hobby', 'error', 'study']}
                                 inputList={[
@@ -247,9 +299,9 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
             {/* ======================= */}
             {/* More 버튼 눌렀을 때 */}
             {/* ======================= */}
-            {isMoreBtnClick && (
+            {modalStack.includes('more') && (
                 <ModalBody
-                    isOpen={isMoreBtnClick}
+                    isOpen={true}
                     size="normal"
                     html={
                         <>
@@ -277,7 +329,7 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                                                 className={'dashboardBtn writeBtn'}
                                                 onClick={() => {
                                                     if (detail) {
-                                                        setIsFixClick(true);
+                                                        openModal('fix');
                                                     }
                                                 }}
                                             >
@@ -289,7 +341,7 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                                             <button
                                                 className={'dashboardBtn writeBtn'}
                                                 onClick={() => {
-                                                    setIsAddBtnClick(true);
+                                                    openModal('add');
                                                     setDetailData(undefined);
                                                 }}
                                             >
@@ -303,10 +355,7 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                                     <button
                                         className={'dashboardBtn'}
                                         onClick={() => {
-                                            setIsMoreBtnClick(false);
-                                            setIsFixClick(false);
-                                            setIsMoreBtnClick(false);
-                                            setIsAddBtnClick(false);
+                                            closeAll();
                                             setDetailData(undefined);
                                         }}
                                     >
@@ -315,12 +364,25 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                                 </div>
                             </div>
                             {/* ======================= */}
+                            {/* 검색창 */}
+                            {/* ======================= */}
+                            <input
+                                className={'searchInput'}
+                                type="text"
+                                placeholder="> SEARCH..."
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                            />
+                            {/* ======================= */}
                             {/* More 창에서 리스트와 디테일 보이는 부분 */}
                             {/* ======================= */}
                             <div className={'logList'}>
                                 <div className="logListLeft">
                                     <div className="LeftContent">
-                                        {curPosts.map((v) => (
+                                        {isPageLoading && (
+                                            <div className="crt-loading">&gt; LOADING...</div>
+                                        )}
+                                        {!isPageLoading && p_data.map((v: IPostDataWithHtml) => (
                                             <div
                                                 className="logPlaceholderCard"
                                                 key={v.slug.toString()}
@@ -348,7 +410,7 @@ const MainPageComponent = ({ postData, stackData }: { postData: IPostDataWithHtm
                                                 </div>
                                             </div>
                                         ))}
-                                    </div>
+                                        </div>
                                     {/* ======================= */}
                                     {/* 페이지네이션 */}
                                     {/* ======================= */}

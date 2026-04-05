@@ -40,5 +40,19 @@
 .crt-bar-inner {
     color: #0f0;
     font-size: 8px;
-    line-height: 14px; 
+    line-height: 14px;
+}
+
+.crt-loading {
+    color: #00ff66;
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    padding: 10px 14px;
+    opacity: 0.6;
+    animation: crtBlink 1s step-start infinite;
+}
+
+@keyframes crtBlink {
+    0%, 100% { opacity: 0.6; }
+    50%       { opacity: 0.2; }
 }

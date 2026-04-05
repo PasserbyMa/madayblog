@@ -3,22 +3,16 @@
 import { ServerType } from '@/app/api/system/server/route';
 import { useEffect, useState } from 'react';
 import CRTBar from './crtbar';
+import { getServerStatus } from '@/app/lib/apiClient';
 
 const GetServerState = () => {
     const [server, setServer] = useState<ServerType | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/system/server', { cache: 'no-store' })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.error) {
-                    setError(data.error);
-                } else {
-                    setServer(data);
-                }
-            })
-            .catch(() => setError("Network Error"));
+        getServerStatus()
+            .then(setServer)
+            .catch(() => setError('Network Error'));
     }, []);
 
     if (error) {
@@ -30,7 +24,12 @@ const GetServerState = () => {
         );
     }
 
-    if (server === null) return null;
+    if (server === null) return (
+        <div className="crt-container">
+            <div className="crt-title">OCI</div>
+            <div className="crt-loading">&gt; FETCHING DATA...</div>
+        </div>
+    );
 
     const cpu = Number(server.cpu);
 

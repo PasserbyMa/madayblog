@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import styles from './writeForm.module.css';
 import { ConvertMarkdownToHtml } from '../../MKdouwn/transMD';
 import { BaseInsertPostType, IPostDataWithHtml } from '@/app/api/models/posts/model_posts';
+import { getPosts, insertPost } from '@/app/lib/apiClient';
+import { useToast } from '@/app/component/common/useToast';
+import Toast from '@/app/component/common/toast';
 
 type InputTagType = 'input' | 'TextArea' | 'date';
 type InputType = {
@@ -21,6 +24,7 @@ const WriteForm = ({
     inputList: InputType[];
     setPData: (data: IPostDataWithHtml[]) => void;
 }) => {
+    const { toast, showToast } = useToast();
     const [previewHtml, setPreviewHtml] = useState<string>('');
     const [formData, setFormData] = useState<BaseInsertPostType>({
         title: '',
@@ -40,9 +44,8 @@ const WriteForm = ({
                 if (!controller.signal.aborted) {
                     setPreviewHtml(contentHtml || '');
                 }
-            } catch (e) {
+            } catch {
                 if (!controller.signal.aborted) {
-                    console.log(e);
                     setPreviewHtml('');
                 }
             }
@@ -62,39 +65,26 @@ const WriteForm = ({
     };
     //===
     const RefreshData = async () => {
-        const res = await fetch('/api/controller/GET/posts');
-        const data: IPostDataWithHtml[] = await res.json();
-        setPData(data);
+        const { posts } = await getPosts(1, 10);
+        setPData(posts);
     };
     //===
     const ClickSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const response = await fetch('/api/controller/INSERT/posts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-
-            if (!response) return;
-
-            setFormData({
-                title: '',
-                content: '',
-                category: '',
-                date: new Date(),
-                slug: '',
-            });
-            //넣었으니 데이터 최신화 작업
+            await insertPost(formData);
+            setFormData({ title: '', content: '', category: '', date: new Date(), slug: '' });
             RefreshData();
+            showToast('포스트가 등록되었습니다.');
             setIsOpen(false);
-        } catch (e) {
-            console.log(e);
+        } catch (err) {
+            showToast(err instanceof Error ? err.message : '등록 실패', 'error');
         }
     };
     //===
     return (
         <section style={{ display: 'flex', flexDirection: 'row', gap: '20px' }}>
+            <Toast {...toast} />
             <form onSubmit={ClickSubmit} style={{ width: '600px', margin: '0 auto', maxHeight: '740px' }}>
                 <label className={styles.label} htmlFor="modal-category">
                     category

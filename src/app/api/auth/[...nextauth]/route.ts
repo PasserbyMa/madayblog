@@ -1,7 +1,7 @@
-import NextAuth from 'next-auth';
+import NextAuth, { NextAuthOptions } from 'next-auth';
 import GitHubProvider from 'next-auth/providers/github';
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
     providers: [
         GitHubProvider({
             clientId: process.env.GITHUB_ID!,
@@ -13,16 +13,16 @@ const handler = NextAuth({
     },
     callbacks: {
         async jwt({ token, profile, account }) {
-        if (account?.provider === 'github' && profile) {
-            const githubProfile = profile as { id: number };
-            token.isAdmin =
-            githubProfile.id === Number(process.env.GITHUB_ADMIN_ID);
-        }
+            if (account?.provider === 'github' && profile) {
+                const githubProfile = profile as { id: number };
+                token.isAdmin =
+                    githubProfile.id === Number(process.env.GIT_ADMIN_ID);
+            }
 
-        // 👇 이미 설정된 값 유지
-        token.isAdmin = token.isAdmin ?? false;
+            // 이미 설정된 값 유지
+            token.isAdmin = token.isAdmin ?? false;
 
-        return token;
+            return token;
         },
 
         async session({ session, token }) {
@@ -33,9 +33,10 @@ const handler = NextAuth({
         },
     },
 
-
     secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
 

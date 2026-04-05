@@ -6,6 +6,7 @@ import WriteFormStack from './writeFormUser';
 import ModalBody from '../../common/modal';
 import Bubble from '../../common/bubble';
 import { useMediaQuery } from '@mui/material';
+import { getStacks, deleteStack } from '@/app/lib/apiClient';
 
 const AboutMe = ({ isLogin, stackData }: { isLogin: boolean; stackData: IStackDocument[] }) => {
     const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -20,17 +21,12 @@ const AboutMe = ({ isLogin, stackData }: { isLogin: boolean; stackData: IStackDo
     //===
     useEffect(() => {
         const RefreshStackData = async () => {
-            const res = await fetch('/api/controller/GET/stack');
-            const data: IStackDocument[] = await res.json();
+            const data = await getStacks();
             setData(data);
         };
 
         const DeleteStack = async ({ id }: { id: string }) => {
-            await fetch('/api/controller/DELETE/stack', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id }),
-            });
+            await deleteStack(id);
             RefreshStackData();
             setIsDeleteModal(false);
             setIsDelete(false);
@@ -55,7 +51,7 @@ const AboutMe = ({ isLogin, stackData }: { isLogin: boolean; stackData: IStackDo
                             setIsAddBtn(!isAddBtn);
                             setPos({ x: e.clientX, y: e.clientY + 30 });
                             setIsDeleteModal(false);
-                            setIsDelete(Boolean);
+                            setIsDelete(false);
                         }}
                     >
                         +

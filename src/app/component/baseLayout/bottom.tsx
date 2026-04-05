@@ -1,11 +1,12 @@
 'use client';
 
-import { env } from 'process';
 import Style from './footer.module.css';
+
+const GITHUB_URL = 'https://github.com/PasserbyMa';
+const EMAIL = 'makecool0@naver.com';
 
 const FooterLayout = () => {
     const currentYear = new Date().getFullYear();
-    const email = env.GIT_EMAIL;
 
     return (
         <footer className={Style.footerContainer}>
@@ -20,12 +21,12 @@ const FooterLayout = () => {
 
                 {/* 중간: 링크 영역 (소셜, 연락처 등) */}
                 <div className={Style.linkSection}>
-                    <a href={email} target="_blank" rel="noopener noreferrer" className={Style.link}>
+                    <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={Style.link}>
                         GitHub
                     </a>
                     <span className={Style.separator}>/</span>
-                    <a href={`mailto:${email}`} className={Style.link}>
-                        Email:kai@mocha-company.com
+                    <a href={`mailto:${EMAIL}`} className={Style.link}>
+                        Email:{EMAIL}
                     </a>
                 </div>
 

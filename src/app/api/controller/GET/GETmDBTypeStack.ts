@@ -8,7 +8,7 @@ export async function GetStackAllData(): Promise<IStackDocument[]> {
     const MONGO_URI = process.env.MONGO_URI;
 
     if (!MONGO_URI) {
-        console.warn('GetPostsAllData: MONGO_URI not set. Returning empty data for BUILD.');
+        console.warn('GetStackAllData: MONGO_URI not set. Returning empty data for BUILD.');
         return []; // DB 접근 없이 빈 배열 반환
     }
 
@@ -17,7 +17,7 @@ export async function GetStackAllData(): Promise<IStackDocument[]> {
         const stacks = await ModelStacksSetting.find({}).lean();
         return JSON.parse(JSON.stringify(stacks));
     } catch (error) {
-        console.error('GetPostsAllData:', error);
-        throw new Error('GetPostsAllData');
+        console.error('GetStackAllData:', error);
+        throw new Error('GetStackAllData');
     }
 }

@@ -12,6 +12,7 @@ import '@/app/css/common/aboutMe.css';
 import '@/app/css/common/main.css';
 import '@/app/css/common/bubble.css';
 import '@/app/css/common/crt.css';
+import '@/app/css/common/toast.css';
 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

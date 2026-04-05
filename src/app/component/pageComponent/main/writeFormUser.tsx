@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import styles from './writeForm.module.css';
 import { IStackDocument } from '@/app/api/models/stacks/model_stacks';
+import { getStacks, insertStack } from '@/app/lib/apiClient';
+import { useToast } from '@/app/component/common/useToast';
+import Toast from '@/app/component/common/toast';
 
 type InputTagType = 'input' | 'TextArea';
 type InputType = {
@@ -17,6 +20,7 @@ const WriteFormStack = ({
     inputList: InputType[];
     setS_Data: (data: IStackDocument[]) => void;
 }) => {
+    const { toast, showToast } = useToast();
     const [formData, setFormData] = useState({
         stack: '',
         slug: '',
@@ -27,33 +31,25 @@ const WriteFormStack = ({
         setFormData((prev) => ({ ...prev, [target]: value }));
     //===
     const RefreshData = async () => {
-        const res = await fetch('/api/controller/GET/stack');
-        const data: IStackDocument[] = await res.json();
+        const data = await getStacks();
         setS_Data(data);
         setIsOpen(false);
     };
     //===
     const ClickSubmit = async () => {
         try {
-            const response = await fetch('/api/controller/INSERT/stack', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData), // 데이터를 JSON 형태로 전송
-            });
-            setFormData({
-                stack: '',
-                slug: '',
-                color: '',
-            });
-
-            if (!response) return;
+            await insertStack(formData);
+            setFormData({ stack: '', slug: '', color: '' });
+            showToast('스택이 추가되었습니다.');
             RefreshData();
-        } catch (e) {
-            console.log(e);
+        } catch (err) {
+            showToast(err instanceof Error ? err.message : '추가 실패', 'error');
         }
     };
 
     return (
+        <>
+        <Toast {...toast} />
         <form
             onSubmit={(e) => {
                 e.preventDefault();
@@ -87,6 +83,7 @@ const WriteFormStack = ({
                 </button>
             </div>
         </form>
+        </>
     );
 };
 

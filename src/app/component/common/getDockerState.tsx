@@ -6,20 +6,34 @@ import styles from './docker.module.css';
 
 export default function DockerContainersBox() {
     const [containers, setContainers] = useState<DockerContainer[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const GetDataOCIServer = async () => {
-            await fetch('/api/system/docker', { cache: 'no-store' })
-                .then((res) => res.json())
-                .then(setContainers)
-                .catch(() => setContainers([]));
+        const es = new EventSource('/api/system/docker');
+
+        es.onmessage = (e) => {
+            try {
+                setContainers(JSON.parse(e.data));
+                setIsLoading(false);
+            } catch {
+                setContainers([]);
+                setIsLoading(false);
+            }
         };
-        GetDataOCIServer();
-        const timer = setInterval(GetDataOCIServer, 5000);
-        return () => clearInterval(timer);
+
+        es.onerror = () => {
+            setContainers([]);
+            setIsLoading(false);
+        };
+
+        return () => es.close();
     }, []);
 
-    if (containers.length === 0) return <div>Loading...</div>;
+    if (isLoading) return (
+        <div className="crt-container">
+            <div className="crt-loading">&gt; CONNECTING...</div>
+        </div>
+    );
 
     return (
         <div className={styles.box}>

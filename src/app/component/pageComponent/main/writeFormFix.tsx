@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import styles from './writeForm.module.css';
 import { ConvertMarkdownToHtml } from '../../MKdouwn/transMD';
 import { IPostDataWithHtml } from '@/app/api/models/posts/model_posts';
+import { getPosts, updatePost } from '@/app/lib/apiClient';
+import { useToast } from '@/app/component/common/useToast';
+import Toast from '@/app/component/common/toast';
 
 type InputTagType = 'input' | 'TextArea';
 type InputType = {
@@ -25,6 +28,7 @@ const WriteFormFix = ({
     setPData: (data: IPostDataWithHtml[]) => void;
     setDetailData: (data: IPostDataWithHtml) => void;
 }) => {
+    const { toast, showToast } = useToast();
     const [previewHtml, setPreviewHtml] = useState('');
     const [updateData, setUpdateData] = useState<IPostDataWithHtml>(formData);
 
@@ -38,9 +42,8 @@ const WriteFormFix = ({
                 if (!controller.signal.aborted) {
                     setPreviewHtml(contentHtml || '');
                 }
-            } catch (e) {
+            } catch {
                 if (!controller.signal.aborted) {
-                    console.log(e);
                     setPreviewHtml('');
                 }
             }
@@ -60,35 +63,28 @@ const WriteFormFix = ({
     };
     //===
     const RefreshData = async () => {
-        const res = await fetch('/api/controller/GET/posts');
-        const data: IPostDataWithHtml[] = await res.json();
-        setPData(data);
-
-        data.map((v) => {
-            if (v._id === updateData._id) setDetailData(v);
-        });
+        const { posts } = await getPosts(1, 10);
+        setPData(posts);
+        const updated = posts.find((v) => v._id === updateData._id);
+        if (updated) setDetailData(updated);
     };
     //===
     const ClickSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // 💡 핵심: fetch를 사용하여 서버 API Route 호출
-            const response = await fetch('/api/controller/UPDATE', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updateData), // 데이터를 JSON 형태로 전송
-            });
-            if (!response) return;
+            await updatePost(updateData);
             RefreshData();
+            showToast('포스트가 수정되었습니다.');
             setIsOpen(false);
-        } catch (e) {
-            console.log(e);
+        } catch (err) {
+            showToast(err instanceof Error ? err.message : '수정 실패', 'error');
         }
     };
 
     if (!updateData) return;
     return (
         <section style={{ display: 'flex', flexDirection: 'row', gap: '20px' }}>
+            <Toast {...toast} />
             <form onSubmit={ClickSubmit} style={{ width: '50%', margin: '0 auto' }}>
                 <div className={styles.inputGroup}>
                     <label className={styles.label} htmlFor="modal-category">
