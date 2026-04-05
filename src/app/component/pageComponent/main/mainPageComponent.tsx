@@ -133,22 +133,39 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                     <DockerContainersBox />
                 </div>
                 {/* ======================= */}
+                {/* CATEGORY_FILTER */}
+                {/* ======================= */}
+                <div className="gridItem">
+                    <h2 className="moduleTitle">[CATEGORY_FILTER]</h2>
+                    <CategoryFilter
+                        onCategoryClick={(cat) => {
+                            setSearchInput(cat);
+                            openModal('more');
+                        }}
+                    />
+                </div>
+                {/* ======================= */}
+                {/* CLOCK */}
+                {/* ======================= */}
+                <div className="gridItem gridItemClock">
+                    <h2 className="moduleTitle">[CLOCK]</h2>
+                    <div className="clockCenter">
+                        <ClockWidget />
+                    </div>
+                </div>
+                {/* ======================= */}
                 {/* RECENT_POSTS*/}
                 {/* ======================= */}
                 <div className={'gridItem'}>
                     <div className={'moduleHeader'}>
                         <h2 className={'moduleTitle'}>[RECENT_POSTS]</h2>
-
                         <button
                             className={'dashboardBtn'}
-                            onClick={() => {
-                                openModal('more');
-                            }}
+                            onClick={() => { openModal('more'); }}
                         >
                             [more]
                         </button>
                     </div>
-
                     {recentPosts.map((v) => (
                         <div
                             className="logPlaceholder"
@@ -163,30 +180,11 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                     ))}
                 </div>
                 {/* ======================= */}
-                {/* CLOCK */}
-                {/* ======================= */}
-                <div className="gridItem gridItemClock">
-                    <h2 className="moduleTitle">[CLOCK]</h2>
-                    <ClockWidget />
-                </div>
-                {/* ======================= */}
                 {/* GITHUB_ACTIVITY */}
                 {/* ======================= */}
                 <div className="gridItem">
                     <h2 className="moduleTitle">[GITHUB_ACTIVITY]</h2>
                     <GithubActivity />
-                </div>
-                {/* ======================= */}
-                {/* CATEGORY_FILTER */}
-                {/* ======================= */}
-                <div className="gridItem">
-                    <h2 className="moduleTitle">[CATEGORY_FILTER]</h2>
-                    <CategoryFilter
-                        onCategoryClick={(cat) => {
-                            setSearchInput(cat);
-                            openModal('more');
-                        }}
-                    />
                 </div>
                 {/* ======================= */}
                 {/* RASPBERRY_STATUS */}

@@ -25,24 +25,18 @@ const RaspberryStatus = () => {
 
     return (
         <div className="piContainer">
-            {/* BACKUP */}
             <div className="piLabel">&gt; BACKUP</div>
-            <div className="piBackupRow">
-                <span>{lastTime}</span>
-                <span>{data.backup.size}</span>
-                <span>[{data.backup.count} files]</span>
-            </div>
+            <div className="piRow"><span className="piKey">LAST</span><span className="piVal">{lastTime}</span></div>
+            <div className="piRow"><span className="piKey">SIZE</span><span className="piVal">{data.backup.size}</span></div>
+            <div className="piRow"><span className="piKey">COUNT</span><span className="piVal">{data.backup.count} files</span></div>
 
             <div className="piDivider" />
 
-            {/* SYSTEM */}
             <div className="piLabel">&gt; SYSTEM</div>
             <CRTBar label="CPU"  percent={data.system.cpu}  text={`${data.system.cpu}%`} />
             <CRTBar label="MEM"  percent={memPercent}       text={`${data.system.memUsed}/${data.system.memTotal}MB`} />
-            <div className="piDiskRow">
-                <CRTBar label="DISK" percent={data.disk.percent} text={`${data.disk.used}/${data.disk.total}`} />
-                <span className="piTemp">{data.system.temp}</span>
-            </div>
+            <CRTBar label="DISK" percent={data.disk.percent} text={`${data.disk.used}/${data.disk.total}`} />
+            <div className="piRow"><span className="piKey">TEMP</span><span className="piVal">{data.system.temp}</span></div>
         </div>
     );
 };

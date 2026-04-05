@@ -18,12 +18,12 @@
 .dashboardGrid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    grid-auto-rows: 250px;
     padding: 20px;
     gap: 15px;
 }
 
 .gridItem {
+    height: 250px;
     background-color: rgba(0, 0, 0, 0.5);
     border: 1px solid #00ff00;
     padding: 15px;
@@ -141,12 +141,21 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
 }
 
 .gridItemClock .moduleTitle {
     width: 100%;
 }
+
+.clockCenter {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 20px;
+}
+
 
 .clockWidget {
     text-align: center;
@@ -154,11 +163,11 @@
 }
 
 .clockTime {
-    font-size: 2.8rem;
+    font-size: 2rem;
     font-weight: bold;
     color: #00ff41;
-    letter-spacing: 4px;
-    text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
+    letter-spacing: 3px;
+    text-shadow: 0 0 6px #00ff41;
     font-family: 'Courier New', monospace;
 }
 
@@ -171,9 +180,9 @@
 }
 
 .clockDate {
-    margin-top: 10px;
-    font-size: 0.9rem;
-    color: #33ff33;
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: rgba(0, 255, 65, 0.7);
     letter-spacing: 2px;
 }
 
@@ -269,23 +278,9 @@
     font-family: 'Courier New', monospace;
     font-size: 0.75rem;
     color: #00ff41;
-    padding: 4px 2px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-}
-
-.piLabel {
-    color: rgba(0, 255, 65, 0.55);
-    font-size: 0.68rem;
-    letter-spacing: 1px;
-}
-
-.piBackupRow {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.73rem;
-    padding: 0 2px;
+    gap: 3px;
 }
 
 .piDivider {
@@ -293,21 +288,26 @@
     margin: 2px 0;
 }
 
-.piDiskRow {
+.piLabel {
+    color: rgba(0, 255, 65, 0.55);
+    font-size: 0.68rem;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+
+.piRow {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    font-size: 0.75rem;
 }
 
-.piDiskRow > :first-child {
-    flex: 1;
+.piKey {
+    color: rgba(0, 255, 65, 0.7);
+    min-width: 50px;
 }
 
-.piTemp {
-    font-size: 0.72rem;
-    color: rgba(0, 255, 65, 0.8);
-    white-space: nowrap;
-    flex-shrink: 0;
+.piVal {
+    color: #00ff41;
 }
 
 @media (max-width: 768px) {
