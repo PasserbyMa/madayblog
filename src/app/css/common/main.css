@@ -150,7 +150,7 @@
 
 .clockWidget {
     text-align: center;
-    margin-top: 20px;
+    margin-top: 0;
 }
 
 .clockTime {
@@ -263,31 +263,51 @@
 /* ======================= */
 /* RASPBERRY_PI widget */
 /* ======================= */
-.piSection {
-    margin-bottom: 8px;
+.piContainer {
+    flex: 1;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    color: #00ff41;
+    padding: 4px 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .piLabel {
-    color: rgba(0, 255, 65, 0.6);
-    font-size: 0.7rem;
-    margin-bottom: 4px;
+    color: rgba(0, 255, 65, 0.55);
+    font-size: 0.68rem;
     letter-spacing: 1px;
 }
 
-.piRow {
+.piBackupRow {
     display: flex;
     justify-content: space-between;
-    font-size: 0.78rem;
-    padding: 1px 0;
+    font-size: 0.73rem;
+    padding: 0 2px;
 }
 
-.piKey {
-    color: rgba(0, 255, 65, 0.7);
-    min-width: 50px;
+.piDivider {
+    border-top: 1px dashed rgba(0, 255, 65, 0.25);
+    margin: 2px 0;
 }
 
-.piVal {
-    color: #00ff41;
+.piDiskRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.piDiskRow > :first-child {
+    flex: 1;
+}
+
+.piTemp {
+    font-size: 0.72rem;
+    color: rgba(0, 255, 65, 0.8);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 @media (max-width: 768px) {

@@ -2,54 +2,66 @@
 # ================================================================
 # Ma_Blog - Raspberry Pi 백업 & 상태 전송 스크립트
 # 위치: ~/backup/pi_backup.sh
-# 실행: crontab -e → 0 * * * * /home/pi/backup/pi_backup.sh
 # ================================================================
 
-# ── 설정 (환경에 맞게 수정) ──────────────────────────────────────
-MONGO_URI="mongodb+srv://..."          # 블로그 MongoDB 연결 문자열
-BLOG_URL="https://your-blog.com"       # 블로그 도메인
-API_KEY="your-internal-api-key"        # INTERNAL_API_KEY 값
-BACKUP_BASE="/home/pi/backups"         # 백업 저장 폴더
-KEEP_DAYS=7                            # 백업 보관 일수
-# ────────────────────────────────────────────────────────────────
+OCI_USER="ubuntu"
+OCI_HOST="129.154.55.20"
+BLOG_URL="https://madayblog.com"
+API_KEY="ebab091fbb70a3dc84f3a615b467a2f4bae01718e054f1a208110a25dee22ef2"
+BACKUP_BASE="/home/makecool0/backups"
+KEEP_DAYS=7
 
+# ── 1. 백업 폴더 생성 ────────────────────────────────────────────
 mkdir -p "$BACKUP_BASE"
 
-# ── 1. mongodump 백업 ────────────────────────────────────────────
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="$BACKUP_BASE/$TIMESTAMP"
+BACKUP_FILE="$BACKUP_BASE/mablog_${TIMESTAMP}.tar.gz"
+BACKUP_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-mongodump --uri="$MONGO_URI" --out="$BACKUP_DIR" --quiet 2>/dev/null
-DUMP_EXIT=$?
+# ── 2. OCI 서버에서 mongodump 실행 후 Pi로 전송 ──────────────────
+ssh -o StrictHostKeyChecking=no ${OCI_USER}@${OCI_HOST} \
+    "docker exec mablog_mongodb mongodump \
+        --uri='mongodb://mongoAdmin:mongoA96547852!@localhost:27017/maBlog_DataTable?authSource=admin' \
+        --out=/tmp/mablog_dump --quiet && \
+     docker cp mablog_mongodb:/tmp/mablog_dump /tmp/mablog_dump_host && \
+     tar -czf /tmp/mablog_backup.tar.gz -C /tmp mablog_dump_host && \
+     docker exec mablog_mongodb rm -rf /tmp/mablog_dump && \
+     rm -rf /tmp/mablog_dump_host"
 
-if [ $DUMP_EXIT -ne 0 ]; then
-    BACKUP_SIZE="ERROR"
-    BACKUP_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+SCP_EXIT=$?
+
+if [ $SCP_EXIT -eq 0 ]; then
+    scp -o StrictHostKeyChecking=no \
+        ${OCI_USER}@${OCI_HOST}:/tmp/mablog_backup.tar.gz \
+        "$BACKUP_FILE"
+    BACKUP_SIZE=$(du -sh "$BACKUP_FILE" 2>/dev/null | cut -f1)
+    # OCI 임시 파일 정리
+    ssh -o StrictHostKeyChecking=no ${OCI_USER}@${OCI_HOST} \
+        "rm -f /tmp/mablog_backup.tar.gz"
 else
-    BACKUP_SIZE=$(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1)
-    BACKUP_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    BACKUP_SIZE="ERROR"
 fi
 
-# ── 2. 오래된 백업 삭제 ──────────────────────────────────────────
-find "$BACKUP_BASE" -maxdepth 1 -type d -mtime +$KEEP_DAYS -exec rm -rf {} + 2>/dev/null
+# ── 3. 오래된 백업 삭제 ──────────────────────────────────────────
+find "$BACKUP_BASE" -name "mablog_*.tar.gz" -mtime +$KEEP_DAYS -delete 2>/dev/null
 
-# ── 3. 백업 개수 ─────────────────────────────────────────────────
-BACKUP_COUNT=$(find "$BACKUP_BASE" -maxdepth 1 -type d | grep -v "^$BACKUP_BASE$" | wc -l)
+# ── 4. 백업 개수 ─────────────────────────────────────────────────
+BACKUP_COUNT=$(find "$BACKUP_BASE" -name "mablog_*.tar.gz" | wc -l)
 
-# ── 4. 디스크 정보 ───────────────────────────────────────────────
-DISK_TOTAL=$(df -h "$BACKUP_BASE"  | awk 'NR==2{print $2}')
-DISK_USED=$(df -h "$BACKUP_BASE"   | awk 'NR==2{print $3}')
-DISK_AVAIL=$(df -h "$BACKUP_BASE"  | awk 'NR==2{print $4}')
-DISK_PERCENT=$(df "$BACKUP_BASE"   | awk 'NR==2{print $5}' | tr -d '%')
+# ── 5. 디스크 정보 ───────────────────────────────────────────────
+DISK_TOTAL=$(df -h "$BACKUP_BASE"   | awk 'NR==2{print $2}')
+DISK_USED=$(df -h "$BACKUP_BASE"    | awk 'NR==2{print $3}')
+DISK_AVAIL=$(df -h "$BACKUP_BASE"   | awk 'NR==2{print $4}')
+DISK_PERCENT=$(df "$BACKUP_BASE"    | awk 'NR==2{gsub(/%/,""); print $5}')
 
-# ── 5. 시스템 상태 ───────────────────────────────────────────────
+# ── 6. 시스템 상태 ───────────────────────────────────────────────
 CPU=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | tr -d '%us,')
 MEM_TOTAL=$(free -m | awk 'NR==2{print $2}')
 MEM_USED=$(free -m  | awk 'NR==2{print $3}')
 TEMP=$(vcgencmd measure_temp 2>/dev/null | cut -d= -f2 | tr -d "'C")
 TEMP="${TEMP:-N/A}"
 
-# ── 6. 블로그 API로 전송 ─────────────────────────────────────────
+# ── 7. 블로그 API로 전송 ─────────────────────────────────────────
 curl -s -X POST "$BLOG_URL/api/system/raspberry" \
     -H "Authorization: Bearer $API_KEY" \
     -H "Content-Type: application/json" \
@@ -63,15 +75,16 @@ curl -s -X POST "$BLOG_URL/api/system/raspberry" \
             \"total\": \"$DISK_TOTAL\",
             \"used\": \"$DISK_USED\",
             \"avail\": \"$DISK_AVAIL\",
-            \"percent\": $DISK_PERCENT
+            \"percent\": ${DISK_PERCENT:-0}
         },
         \"system\": {
             \"cpu\": ${CPU:-0},
-            \"memUsed\": $MEM_USED,
-            \"memTotal\": $MEM_TOTAL,
+            \"memUsed\": ${MEM_USED:-0},
+            \"memTotal\": ${MEM_TOTAL:-1},
             \"temp\": \"${TEMP}'C\"
         }
-    }" > /dev/null 2>&1
+    }"
 
-echo "[$BACKUP_TIME] backup=$BACKUP_SIZE disk=${DISK_USED}/${DISK_TOTAL} cpu=${CPU}% temp=${TEMP}C" \
-    >> "$BACKUP_BASE/pi_backup.log"
+# ── 8. 로그 ──────────────────────────────────────────────────────
+echo "[$BACKUP_TIME] size=$BACKUP_SIZE count=$BACKUP_COUNT disk=${DISK_USED}/${DISK_TOTAL} cpu=${CPU}% temp=${TEMP}C" \
+    >> "$BACKUP_BASE/backup.log"

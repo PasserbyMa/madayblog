@@ -4,7 +4,8 @@
     font-size: 14px;
     padding: 10px 14px;
     flex: 1;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .crt-title {
