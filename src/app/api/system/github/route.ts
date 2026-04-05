@@ -12,34 +12,45 @@ export type CommitType = {
 export async function GET() {
     try {
         const username = process.env.GITHUB_USERNAME ?? 'PasserbyMa';
-        const res = await fetch(`https://api.github.com/users/${username}/events?per_page=50`, {
-            headers: { Accept: 'application/vnd.github.v3+json' },
-            next: { revalidate: 300 },
-        });
+        const headers = { Accept: 'application/vnd.github.v3+json' };
 
-        if (!res.ok) throw new Error('GitHub API error');
+        // 1. 유저 이벤트에서 PushEvent만 추출
+        const eventsRes = await fetch(
+            `https://api.github.com/users/${username}/events?per_page=30`,
+            { headers, next: { revalidate: 300 } }
+        );
+        if (!eventsRes.ok) throw new Error('events API error');
 
-        const events = await res.json();
+        const events = await eventsRes.json();
+        const pushEvents = (events as { type: string; repo: { name: string }; payload: { head: string }; created_at: string }[])
+            .filter((e) => e.type === 'PushEvent')
+            .slice(0, 6);
 
-        const commits: CommitType[] = [];
+        // 2. 각 PushEvent의 head SHA로 커밋 메시지 fetch
+        const results = await Promise.all(
+            pushEvents.map(async (event) => {
+                const repoFullName = event.repo.name; // "owner/repo"
+                const headSha = event.payload.head;
+                try {
+                    const commitRes = await fetch(
+                        `https://api.github.com/repos/${repoFullName}/commits/${headSha}`,
+                        { headers, next: { revalidate: 300 } }
+                    );
+                    if (!commitRes.ok) return null;
+                    const commit = await commitRes.json();
+                    return {
+                        sha: headSha.slice(0, 7),
+                        message: commit.commit.message.split('\n')[0],
+                        date: event.created_at,
+                        repo: repoFullName.split('/')[1],
+                    } satisfies CommitType;
+                } catch {
+                    return null;
+                }
+            })
+        );
 
-        for (const event of events) {
-            if (event.type !== 'PushEvent') continue;
-            const repoName: string = event.repo.name; // "owner/repo"
-            const date: string = event.created_at;
-
-            for (const c of event.payload.commits ?? []) {
-                commits.push({
-                    sha: c.sha.slice(0, 7),
-                    message: c.message.split('\n')[0],
-                    date,
-                    repo: repoName.split('/')[1], // repo 이름만
-                });
-                if (commits.length >= 8) break;
-            }
-            if (commits.length >= 8) break;
-        }
-
+        const commits = results.filter((c): c is CommitType => c !== null);
         return NextResponse.json(commits);
     } catch {
         return NextResponse.json([]);

@@ -22,6 +22,7 @@ import DockerContainersBox from '../../common/getDockerState';
 import ClockWidget from '../../common/clockWidget';
 import GithubActivity from '../../common/githubActivity';
 import CategoryFilter from '../../common/categoryFilter';
+import RaspberryStatus from '../../common/raspberryStatus';
 
 //===
 type ModalType = 'more' | 'recentDetail' | 'add' | 'fix';
@@ -186,6 +187,13 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                             openModal('more');
                         }}
                     />
+                </div>
+                {/* ======================= */}
+                {/* RASPBERRY_STATUS */}
+                {/* ======================= */}
+                <div className="gridItem">
+                    <h2 className="moduleTitle">[RASPBERRY_PI]</h2>
+                    <RaspberryStatus />
                 </div>
             </div>
             {/* ======================= */}
