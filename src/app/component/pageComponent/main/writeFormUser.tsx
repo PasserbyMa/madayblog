@@ -74,7 +74,7 @@ const WriteFormStack = ({
             ))}
 
             {/* 버튼 영역 */}
-            <div style={{ display: 'flex', gap: '20px', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: '20px', justifyContent: 'flex-end', marginTop: '12px' }}>
                 <button type="submit" className={'dashboardBtn'}>
                     Upload
                 </button>

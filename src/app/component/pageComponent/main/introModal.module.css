@@ -1,0 +1,94 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.82rem;
+    color: #00ff41;
+    padding: 4px 0;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.sectionTitle {
+    color: #33ff33;
+    font-size: 0.9rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.divider {
+    border-bottom: 1px dashed rgba(0, 255, 65, 0.25);
+}
+
+.line {
+    display: flex;
+    gap: 12px;
+}
+
+.key {
+    color: rgba(0, 255, 65, 0.55);
+    min-width: 72px;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+}
+
+.val {
+    color: #00ff41;
+}
+
+.level {
+    color: rgba(0, 255, 65, 0.45);
+    font-size: 0.72rem;
+    margin-left: 4px;
+}
+
+.careerItem {
+    display: flex;
+    gap: 12px;
+    font-size: 0.78rem;
+    padding: 4px 0;
+    border-bottom: 1px dashed rgba(0, 255, 65, 0.1);
+    flex-wrap: wrap;
+}
+
+.period {
+    color: rgba(0, 255, 65, 0.5);
+    flex-shrink: 0;
+    min-width: 130px;
+    font-size: 0.74rem;
+}
+
+.careerDetail {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.company {
+    color: #33ff33;
+    font-weight: bold;
+    font-size: 0.82rem;
+}
+
+.careerDesc {
+    color: rgba(0, 255, 65, 0.75);
+    font-size: 0.74rem;
+}
+
+.link {
+    color: #00ff41;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-size: 0.82rem;
+}
+
+.link:hover {
+    color: #ffffff;
+}
