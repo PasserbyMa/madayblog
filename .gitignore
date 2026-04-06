@@ -38,6 +38,12 @@ yarn-error.log*
 # MongoDB 데이터
 mongo_data/
 
+# Elasticsearch 데이터 (바이너리 인덱스 파일)
+elasticsearch_data/
+
+# nginx 접속 로그
+nginx_logs/
+
 # Certbot 인증서 및 웹루트
 certbot/conf/
 certbot/www/
