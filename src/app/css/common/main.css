@@ -98,7 +98,6 @@
     height: 40px;
     color: #00ff41;
     padding: 5px 10px;
-    white-space: pre;
     border: 1px solid #00ff41;
     overflow: hidden;
     box-sizing: border-box;
@@ -155,6 +154,45 @@
     justify-content: flex-start;
     padding-top: 20px;
 }
+
+/* NGINX_LOG: 2칸 너비 */
+.gridItemNginx {
+    grid-column: span 2;
+}
+
+.nginxLog {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 0.72rem;
+    font-family: monospace;
+}
+
+.nginxLogEmpty {
+    color: #555;
+    font-size: 0.75rem;
+    margin-top: 8px;
+}
+
+.nginxLogList {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.nginxLogRow {
+    display: grid;
+    grid-template-columns: 52px 36px 40px 1fr 52px;
+    gap: 6px;
+    align-items: center;
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(0, 255, 0, 0.08);
+}
+
+.nginxLogTime  { color: #666; }
+.nginxLogStatus{ font-weight: bold; }
+.nginxLogMethod{ color: #aaffaa; }
+.nginxLogPath  { color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nginxLogRt    { color: #555; text-align: right; }
 
 
 .clockWidget {
@@ -339,7 +377,7 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
-        max-height: 110px;
+        max-height: 220px;
         overflow-y: auto;
     }
     .logListLeft {

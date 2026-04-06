@@ -1,0 +1,6 @@
+# Logstash 기본 설정
+http.host: "0.0.0.0"
+
+# xpack 모니터링 비활성화
+# (별도 ES 모니터링 클러스터 없으므로 끔)
+xpack.monitoring.enabled: false

@@ -23,6 +23,7 @@ import ClockWidget from '../../common/clockWidget';
 import GithubActivity from '../../common/githubActivity';
 import CategoryFilter from '../../common/categoryFilter';
 import RaspberryStatus from '../../common/raspberryStatus';
+import NginxLogWidget from '../../common/nginxLogWidget';
 
 //===
 type ModalType = 'more' | 'recentDetail' | 'add' | 'fix';
@@ -192,6 +193,13 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                 <div className="gridItem">
                     <h2 className="moduleTitle">[RASPBERRY_PI]</h2>
                     <RaspberryStatus />
+                </div>
+                {/* ======================= */}
+                {/* NGINX_LOG */}
+                {/* ======================= */}
+                <div className="gridItem gridItemNginx">
+                    <h2 className="moduleTitle">[NGINX_LOG]</h2>
+                    <NginxLogWidget />
                 </div>
             </div>
             {/* ======================= */}
@@ -433,9 +441,11 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                                 {/* ======================= */}
                                 {/* 상세보기 */}
                                 {/* ======================= */}
-                                <div className="logListRight">
-                                    <ListDetailComponent post={detail} type="more" />
-                                </div>
+                                {(!isMobile || detail) && (
+                                    <div className="logListRight">
+                                        <ListDetailComponent post={detail} type="more" />
+                                    </div>
+                                )}
                             </div>
                         </>
                     }

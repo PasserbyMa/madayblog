@@ -46,3 +46,4 @@
 2025/12/05 02:18:15 [emerg] 1#1: "events" directive is not allowed here in /etc/nginx/conf.d/nginx.conf:4
 2025/12/05 02:23:43 [notice] 56#56: signal process started
 2025/12/05 02:24:31 [notice] 66#66: signal process started
+2026/04/06 02:11:44 [warn] 1#1: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/nginx.conf:44
