@@ -41,12 +41,18 @@ const GetServerState = () => {
     const diskTotal = parseFloat(server.disk.total);
     const diskPercent = (diskUsed / diskTotal) * 100;
 
+    const fmtMem = (mb: number) =>
+        mb >= 1024 ? `${(mb / 1024).toFixed(1)}G` : `${mb}M`;
+
     return (
         <div className="crt-container">
-            <div className='crt-title'>OCI</div>
-            <CRTBar label="CPU" percent={cpu} text={`${cpu}%`} />
-            <CRTBar label="MEM" percent={memPercent} text={`${memUsed} / ${memTotal}`} />
+            <div className="crt-title">OCI <span className="crt-online">● ONLINE</span></div>
+            <div className="crt-divider" />
+            <CRTBar label="CPU"  percent={cpu}         text={`${cpu}%`} />
+            <CRTBar label="MEM"  percent={memPercent}  text={`${fmtMem(memUsed)} / ${fmtMem(memTotal)}`} />
             <CRTBar label="DISK" percent={diskPercent} text={`${server.disk.used} / ${server.disk.total}`} />
+            <div className="crt-divider" />
+            <div className="crt-uptime-row">↑ {server.uptime}</div>
         </div>
     );
 };

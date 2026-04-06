@@ -1,0 +1,33 @@
+name: Auto Blog Post
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  write-post:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 5   # 최근 5개 커밋 히스토리
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Anthropic SDK
+        run: npm install @anthropic-ai/sdk
+
+      - name: Write blog post
+        run: node .github/scripts/auto-post.mjs
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BLOG_API_KEY: ${{ secrets.BLOG_API_KEY }}
+          BLOG_URL: https://madayblog.com
+          # GitHub Actions가 push 이벤트의 커밋 목록을 JSON으로 제공
+          COMMITS: ${{ toJson(github.event.commits) }}
+          REPO: ${{ github.event.repository.name }}

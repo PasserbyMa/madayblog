@@ -93,6 +93,45 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* RECENT_POSTS 위젯 — GITHUB_ACTIVITY 스타일 */
+.recentPostList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.recentPostItem {
+    display: flex;
+    gap: 6px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    border-bottom: 1px dashed rgba(0, 255, 65, 0.2);
+    padding-bottom: 6px;
+    min-width: 0;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.recentPostItem:hover .recentPostTitle {
+    color: #ffffff;
+}
+
+.recentPostCategory {
+    color: rgba(0, 255, 65, 0.5);
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-style: italic;
+}
+
+.recentPostTitle {
+    color: #00ff41;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .logPlaceholderCard {
     font-size: 10px;
     height: 40px;

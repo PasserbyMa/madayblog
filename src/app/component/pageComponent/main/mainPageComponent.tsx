@@ -167,18 +167,21 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                             [more]
                         </button>
                     </div>
-                    {recentPosts.map((v) => (
-                        <div
-                            className="logPlaceholder"
-                            key={v.slug.toString()}
-                            onClick={() => {
-                                setDetailData(v);
-                                openModal('recentDetail');
-                            }}
-                        >
-                            {v.title}
-                        </div>
-                    ))}
+                    <div className="recentPostList">
+                        {recentPosts.map((v) => (
+                            <div
+                                className="recentPostItem"
+                                key={v.slug.toString()}
+                                onClick={() => {
+                                    setDetailData(v);
+                                    openModal('recentDetail');
+                                }}
+                            >
+                                <span className="recentPostCategory">{v.category}</span>
+                                <span className="recentPostTitle">{v.title}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
                 {/* ======================= */}
                 {/* GITHUB_ACTIVITY */}
