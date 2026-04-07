@@ -12,6 +12,7 @@ function statusColor(status: number): string {
 
 function formatTime(ts: string): string {
     const d = new Date(ts);
+    // 문자열 앞에 특정 문자를 채워서 지정한 길이를 맞추는 함수
     const hh = String(d.getHours()).padStart(2, '0');
     const mm = String(d.getMinutes()).padStart(2, '0');
     const ss = String(d.getSeconds()).padStart(2, '0');

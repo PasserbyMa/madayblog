@@ -13,7 +13,9 @@ const GithubActivity = () => {
             .catch(() => setLoading(false));
     }, []);
 
+    //로딩 중일 때
     if (loading) return <div className="crt-loading">&gt; FETCHING COMMITS...</div>;
+    //커밋 데이터가 없을 때
     if (!commits.length) return <div className="crt-loading">&gt; NO COMMITS</div>;
 
     return (

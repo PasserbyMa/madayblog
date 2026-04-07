@@ -44,7 +44,7 @@ const MakePage = ({ totalPages, currentPage, onPageChange }: PaginationProps) =>
                         {number}
                     </button>
                 ))}
-                {/* ➡️ 다음 화살표: 현재 페이지가 totalPages보다 작거나, 표시 끝 페이지가 totalPages보다 작을 때만 표시 */}
+                {/* 다음 화살표: 현재 페이지가 totalPages보다 작거나, 표시 끝 페이지가 totalPages보다 작을 때만 표시 */}
                 {(currentPage < totalPages || endPage < totalPages) && (
                     <button onClick={nextPage} className={'pageButton'}>
                         &gt;

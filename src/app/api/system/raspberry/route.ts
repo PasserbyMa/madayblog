@@ -13,6 +13,12 @@ function isAuthorized(request: NextRequest): boolean {
     if (provided.length !== apiKey.length) return false;
     let diff = 0;
     for (let i = 0; i < apiKey.length; i++) {
+        // |= (OR 누적)
+        // XOR은 틀려도 멈추지 않고 끝까지 비교
+        // 유추불가능
+        //diff = 0   →  00000000
+        //diff |= 3  →  00000011  (3이 켜짐)
+        //diff |= 60 →  00111111  (60의 비트도 추가로 켜짐)
         diff |= provided.charCodeAt(i) ^ apiKey.charCodeAt(i);
     }
     return diff === 0;
@@ -20,9 +26,8 @@ function isAuthorized(request: NextRequest): boolean {
 
 // Pi → 블로그: 상태 저장
 export async function POST(request: NextRequest) {
-    if (!isAuthorized(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // 인증키 검사
+    if (!isAuthorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
         const body: IRaspberryStatus = await request.json();

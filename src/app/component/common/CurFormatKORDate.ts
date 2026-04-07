@@ -9,7 +9,7 @@ export const CurFormatKORDate = (dateString: string) => {
 
     if (isNaN(date.getTime())) return 'NaN';
 
-    // 한국 로케일 'ko-KR' 사용 시 "2025. 11. 27." 형태가 반환
+    // 한국 로케일 'ko-KR'->"2025. 11. 27."
     return new Intl.DateTimeFormat('ko-KR', options).format(date);
 };
 

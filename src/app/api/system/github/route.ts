@@ -14,7 +14,7 @@ export async function GET() {
         const username = process.env.GITHUB_USERNAME ?? 'PasserbyMa';
         const headers = { Accept: 'application/vnd.github.v3+json' };
 
-        // 1. 유저 이벤트에서 PushEvent만 추출
+        // 1. 깃헙 유저 이벤트에서 PushEvent만 추출
         const eventsRes = await fetch(
             `https://api.github.com/users/${username}/events?per_page=30`,
             { headers, next: { revalidate: 300 } }
