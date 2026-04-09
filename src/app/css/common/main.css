@@ -205,6 +205,13 @@
     min-height: 300px;
 }
 
+/* SEARCH_SUMMARY + APP_LOG 반반 행 */
+.gridItemRow {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 15px;
+}
+
 .nginxLog {
     flex: 1;
     overflow-y: auto;
@@ -394,6 +401,10 @@
 }
 
 @media (max-width: 768px) {
+    .gridItemRow {
+        flex-direction: column;
+    }
+
     .dashboardHeader {
         padding: 10px;
     }
