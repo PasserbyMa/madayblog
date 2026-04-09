@@ -284,6 +284,15 @@
     <a class="toc-sub" href="#ch10-2">10-2. Python Kafka Consumer — 봇 필터링과 MongoDB 저장</a>
     <a class="toc-sub" href="#ch10-3">10-3. MongoDB 집계 쿼리 — aggregate 파이프라인</a>
     <a class="toc-sub" href="#ch10-4">10-4. TTL 인덱스 — 데이터 자동 만료</a>
+
+    <div class="toc-chapter">CHAPTER 11. 필수 명령어 레퍼런스</div>
+    <a class="toc-sub" href="#ch11-1">11-1. Docker 필수 명령어</a>
+    <a class="toc-sub" href="#ch11-2">11-2. MongoDB 필수 명령어</a>
+
+    <div class="toc-chapter">CHAPTER 12. 로드밸런싱</div>
+    <a class="toc-sub" href="#ch12-1">12-1. 로드밸런싱이 뭔가 — 개념과 필요성</a>
+    <a class="toc-sub" href="#ch12-2">12-2. Nginx로 로드밸런싱 적용하기 — 단계별</a>
+    <a class="toc-sub" href="#ch12-3">12-3. 헬스체크와 무중단 배포</a>
   </div>
 
   <!-- ======================== -->
@@ -2579,6 +2588,503 @@ expireAfterSeconds: 초 단위 (30일 = 2,592,000)
 삭제는 약 60초 간격으로 백그라운드에서 실행됨
 같은 키에 일반 인덱스가 있으면 TTL로 만들 수 없음 → drop 후 재생성
 visitor_stats 30일 최대 용량: 약 27 MB → 소형 서버도 부담 없음
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 11 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch11-1">
+    <div class="chapter-num">CHAPTER 11-1</div>
+    <div class="chapter-title">Docker 필수 명령어</div>
+
+    <h2>컨테이너 상태 확인</h2>
+    <pre># 실행 중인 컨테이너 목록
+docker ps
+
+# 멈춘 것 포함 전체 목록
+docker ps -a
+
+# 컨테이너 로그 보기
+docker logs 컨테이너명
+
+# 실시간으로 로그 보기 (tail -f 같은 것)
+docker logs -f 컨테이너명
+
+# 최근 100줄만
+docker logs --tail 100 컨테이너명</pre>
+
+    <h2>컨테이너 안으로 들어가기</h2>
+    <pre># 실행 중인 컨테이너에 bash로 접속
+docker exec -it 컨테이너명 bash
+
+# bash가 없는 경우 (alpine 계열)
+docker exec -it 컨테이너명 sh
+
+# 한 줄 명령어만 실행하고 나오기
+docker exec 컨테이너명 ls /app</pre>
+    <p><code>-i</code>는 interactive(입력 가능), <code>-t</code>는 tty(터미널 형태)다. 둘을 붙여서 <code>-it</code>로 쓴다.</p>
+
+    <h2>컨테이너 시작/중지/삭제</h2>
+    <pre># 중지
+docker stop 컨테이너명
+
+# 시작 (중지된 컨테이너 재시작)
+docker start 컨테이너명
+
+# 재시작
+docker restart 컨테이너명
+
+# 강제 종료 (안 꺼질 때)
+docker kill 컨테이너명
+
+# 컨테이너 삭제 (중지 후 삭제)
+docker rm 컨테이너명
+
+# 실행하면서 바로 삭제 (--rm)
+docker run --rm 이미지명</pre>
+
+    <h2>이미지 관리</h2>
+    <pre># 이미지 목록
+docker images
+
+# 이미지 삭제
+docker rmi 이미지명:태그
+
+# 안 쓰는 이미지/컨테이너/볼륨 전부 정리 (디스크 여유 확보)
+docker system prune
+
+# 볼륨까지 포함해서 전부 정리 (주의: 데이터 날아감)
+docker system prune --volumes</pre>
+
+    <h2>docker-compose 명령어</h2>
+    <pre># 전체 서비스 시작 (백그라운드)
+docker-compose up -d
+
+# 이미지 다시 빌드하고 시작
+docker-compose up -d --build
+
+# 특정 서비스만 빌드
+docker-compose build 서비스명
+
+# 특정 서비스만 재시작
+docker-compose up -d --build 서비스명
+
+# 전체 서비스 중지
+docker-compose down
+
+# 컨테이너+볼륨까지 삭제 (초기화)
+docker-compose down -v
+
+# 특정 서비스 로그 보기
+docker-compose logs -f 서비스명
+
+# 모든 서비스 상태 확인
+docker-compose ps</pre>
+
+    <h2>리소스 사용량 확인</h2>
+    <pre># CPU, 메모리 실시간 확인 (htop 같은 것)
+docker stats
+
+# 특정 컨테이너만
+docker stats 컨테이너명
+
+# 컨테이너 상세 정보 (IP, 볼륨, 환경변수 등)
+docker inspect 컨테이너명
+
+# IP만 꺼내기
+docker inspect 컨테이너명 | grep IPAddress</pre>
+
+    <h2>볼륨과 파일 복사</h2>
+    <pre># 컨테이너 → 호스트로 파일 복사
+docker cp 컨테이너명:/app/파일 ./로컬경로
+
+# 호스트 → 컨테이너로 파일 복사
+docker cp ./로컬파일 컨테이너명:/app/파일</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 자주 쓰는 조합</div>
+# 로그 확인하면서 문제 파악
+docker logs -f mablog_nextjs
+
+# 컨테이너 들어가서 디버깅
+docker exec -it mablog_mongodb bash
+
+# 코드 바꾸고 특정 서비스만 재배포
+docker-compose up -d --build mablog_nextjs
+
+# 디스크 가득 찼을 때
+docker system prune
+    </div>
+  </div>
+
+  <div class="chapter" id="ch11-2">
+    <div class="chapter-num">CHAPTER 11-2</div>
+    <div class="chapter-title">MongoDB 필수 명령어</div>
+
+    <h2>mongosh 접속</h2>
+    <pre># 도커 컨테이너 안 MongoDB에 접속
+docker exec -it mablog_mongodb mongosh \
+  "mongodb://mongoAdmin:비밀번호@localhost:27017/DB명?authSource=admin"
+
+# 접속 후 DB 선택
+use maBlog_DataTable</pre>
+
+    <h2>데이터베이스 / 컬렉션 확인</h2>
+    <pre># DB 목록
+show dbs
+
+# 현재 DB 확인
+db
+
+# 컬렉션(테이블) 목록
+show collections
+
+# 컬렉션 통계 (용량, 문서 수)
+db.visitor_stats.stats()</pre>
+
+    <h2>기본 CRUD</h2>
+    <pre># 조회
+db.posts.find({})                          # 전체
+db.posts.find({ category: "study" })       # 조건
+db.posts.findOne({ slug: "my-post" })      # 한 건만
+db.posts.find({}).sort({ date: -1 }).limit(5)  # 정렬 + 제한
+
+# 삽입
+db.posts.insertOne({ title: "테스트", category: "study" })
+db.posts.insertMany([{ title: "A" }, { title: "B" }])
+
+# 수정
+db.posts.updateOne(
+  { slug: "my-post" },            # 찾는 조건
+  { $set: { title: "새 제목" } }  # 바꿀 내용
+)
+
+# 삭제
+db.posts.deleteOne({ slug: "my-post" })
+db.posts.deleteMany({ category: "temp" })  # 여러 건</pre>
+
+    <h2>조건 연산자</h2>
+    <pre># 비교
+db.posts.find({ views: { $gt: 100 } })   # greater than (100 초과)
+db.posts.find({ views: { $gte: 100 } })  # greater than or equal (100 이상)
+db.posts.find({ views: { $lt: 100 } })   # less than
+db.posts.find({ views: { $lte: 100 } })  # less than or equal
+db.posts.find({ views: { $ne: 0 } })     # not equal
+
+# 포함 여부
+db.posts.find({ tags: { $in: ["docker", "nginx"] } })   # 하나라도 포함
+db.posts.find({ tags: { $nin: ["draft"] } })            # 포함 안 된 것
+
+# AND / OR
+db.posts.find({ $and: [{ category: "study" }, { views: { $gt: 10 } }] })
+db.posts.find({ $or:  [{ category: "study" }, { category: "error" }] })
+
+# 정규식 (LIKE 검색)
+db.posts.find({ title: { $regex: "docker", $options: "i" } })  # 대소문자 무시
+
+# 필드 존재 여부
+db.posts.find({ thumbnail: { $exists: true } })</pre>
+
+    <h2>인덱스 관리</h2>
+    <pre># 인덱스 목록 확인
+db.posts.getIndexes()
+
+# 인덱스 생성
+db.posts.createIndex({ date: -1 })                  # 단일
+db.posts.createIndex({ category: 1, date: -1 })     # 복합
+db.posts.createIndex({ title: "text" })             # 텍스트 검색용
+
+# 인덱스 삭제
+db.posts.dropIndex("date_-1")
+
+# 쿼리가 인덱스를 쓰는지 확인 (EXPLAIN)
+db.posts.find({ date: { $gte: new Date() } }).explain("executionStats")</pre>
+
+    <h2>집계 (aggregate)</h2>
+    <pre># 카테고리별 개수
+db.posts.aggregate([
+  { $group: { _id: "$category", count: { $sum: 1 } } },
+  { $sort: { count: -1 } }
+])
+
+# 오늘 날짜 이후 데이터 + 필드 선택
+db.visitor_stats.aggregate([
+  { $match: { timestamp: { $gte: new Date("2026-04-09") } } },
+  { $project: { _id: 0, client_ip: 1, path: 1, status: 1 } },
+  { $limit: 10 }
+])</pre>
+
+    <h2>백업 / 복원</h2>
+    <pre># 백업 (mongodump)
+docker exec mablog_mongodb mongodump \
+  --uri="mongodb://mongoAdmin:비밀번호@localhost:27017/DB명?authSource=admin" \
+  --out=/tmp/backup
+
+# 호스트로 가져오기
+docker cp mablog_mongodb:/tmp/backup ./backup
+
+# 복원 (mongorestore)
+docker exec mablog_mongodb mongorestore \
+  --uri="mongodb://mongoAdmin:비밀번호@localhost:27017/?authSource=admin" \
+  /tmp/backup</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 자주 쓰는 조합</div>
+# 특정 컬렉션 문서 수 확인
+db.visitor_stats.countDocuments()
+
+# 최근 5건 확인
+db.visitor_stats.find({}).sort({ timestamp: -1 }).limit(5)
+
+# 특정 조건 데이터 삭제
+db.visitor_stats.deleteMany({ user_agent: "-" })
+
+# 용량이 큰 컬렉션 찾기
+db.stats()
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 12 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch12-1">
+    <div class="chapter-num">CHAPTER 12-1</div>
+    <div class="chapter-title">로드밸런싱이 뭔가 — 개념과 필요성</div>
+
+    <h2>문제 상황</h2>
+    <p>서버 한 대로 서비스를 운영하다 보면 한계가 온다.</p>
+    <pre>사용자 1 ─┐
+사용자 2 ─┤──▶ 서버 1대 ← CPU 100%, 메모리 부족, 응답 느림
+사용자 3 ─┘</pre>
+    <p>해결책은 두 가지다.</p>
+    <table>
+      <tr><th>방법</th><th>설명</th><th>한계</th></tr>
+      <tr><td><strong>Scale Up</strong> (수직 확장)</td><td>서버 사양을 올린다 (CPU, RAM 증가)</td><td>비용이 기하급수적으로 증가, 한계가 있음</td></tr>
+      <tr><td><strong>Scale Out</strong> (수평 확장)</td><td>서버를 여러 대로 늘린다</td><td>여러 서버에 트래픽을 나눠야 함 → 로드밸런서 필요</td></tr>
+    </table>
+
+    <h2>로드밸런서의 역할</h2>
+    <pre>사용자 1 ─┐
+사용자 2 ─┤──▶ [로드밸런서] ──▶ 서버 A
+사용자 3 ─┘          │──────▶ 서버 B
+                      └──────▶ 서버 C</pre>
+    <p>로드밸런서는 들어오는 요청을 여러 서버에 <strong>분산</strong>시킨다. 사용자는 로드밸런서의 IP 하나만 알면 되고, 뒤에 서버가 몇 대인지 몰라도 된다.</p>
+
+    <h2>분산 알고리즘 종류</h2>
+    <table>
+      <tr><th>알고리즘</th><th>방식</th><th>특징</th></tr>
+      <tr><td><strong>Round Robin</strong></td><td>A → B → C → A → B → C...</td><td>기본값. 순서대로 돌아가며 배분</td></tr>
+      <tr><td><strong>Least Connections</strong></td><td>현재 연결 수가 가장 적은 서버로</td><td>서버별 처리 속도가 다를 때 유리</td></tr>
+      <tr><td><strong>IP Hash</strong></td><td>사용자 IP를 해싱해서 항상 같은 서버로</td><td>로그인 세션 유지에 필요 (Sticky Session)</td></tr>
+      <tr><td><strong>Weight</strong></td><td>가중치 높은 서버에 더 많이 배분</td><td>서버 사양이 다를 때</td></tr>
+    </table>
+
+    <h2>L4 vs L7 로드밸런싱</h2>
+    <table>
+      <tr><th></th><th>L4 (Transport Layer)</th><th>L7 (Application Layer)</th></tr>
+      <tr><td>기준</td><td>IP + Port</td><td>URL, 헤더, 쿠키 등</td></tr>
+      <tr><td>속도</td><td>빠름 (내용 안 봄)</td><td>상대적으로 느림</td></tr>
+      <tr><td>기능</td><td>단순 분산</td><td>경로별 분산, 컨텐츠 기반 라우팅</td></tr>
+      <tr><td>예시</td><td>AWS NLB</td><td>Nginx, AWS ALB</td></tr>
+    </table>
+    <pre># L7 예시: URL 경로에 따라 다른 서버로
+/api/*    → API 서버들
+/static/* → 정적 파일 서버
+/         → Next.js 서버들</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+로드밸런싱 = 트래픽을 여러 서버에 나누는 것
+Scale Up  = 서버 사양 증가 (한계 있음)
+Scale Out = 서버 대수 증가 → 로드밸런서 필요
+
+Round Robin  = 순서대로 (기본)
+IP Hash      = 같은 사용자는 항상 같은 서버 (세션 유지)
+Least Conn   = 현재 가장 한가한 서버로
+
+L4 = IP/Port 기준 빠른 분산
+L7 = URL/헤더 기준 스마트한 분산 (Nginx가 여기)
+    </div>
+  </div>
+
+  <div class="chapter" id="ch12-2">
+    <div class="chapter-num">CHAPTER 12-2</div>
+    <div class="chapter-title">Nginx로 로드밸런싱 적용하기 — 단계별</div>
+
+    <h2>지금 내 구조 (단일 서버)</h2>
+    <pre>사용자 ──▶ Nginx ──▶ Next.js 1대</pre>
+    <p>트래픽이 많아지면 Next.js 컨테이너 하나로 버티기 힘들다. 같은 서버 안에서도 컨테이너를 여러 개 띄워서 로드밸런싱할 수 있다.</p>
+
+    <h2>STEP 1 — Next.js 컨테이너 여러 개 띄우기</h2>
+    <pre># docker-compose.yml
+services:
+    nextjs_1:
+        build: .
+        container_name: mablog_nextjs_1
+        expose:
+            - "8080"
+        networks:
+            - mablog_network
+
+    nextjs_2:
+        build: .
+        container_name: mablog_nextjs_2
+        expose:
+            - "8080"
+        networks:
+            - mablog_network</pre>
+    <p>포트를 외부에 열 필요 없다. Nginx가 내부 네트워크에서 직접 접근한다.</p>
+
+    <h2>STEP 2 — Nginx upstream 설정</h2>
+    <pre># nginx.conf
+http {
+    # 로드밸런싱 대상 서버 그룹 정의
+    upstream nextjs_servers {
+        # 기본: Round Robin (순서대로)
+        server mablog_nextjs_1:8080;
+        server mablog_nextjs_2:8080;
+
+        # 가중치 적용 (nextjs_1이 2배 더 받음)
+        # server mablog_nextjs_1:8080 weight=2;
+        # server mablog_nextjs_2:8080 weight=1;
+
+        # 최소 연결 수 방식
+        # least_conn;
+
+        # IP Hash (세션 유지)
+        # ip_hash;
+    }
+
+    server {
+        listen 443 ssl;
+
+        location / {
+            proxy_pass http://nextjs_servers;  # upstream 이름 지정
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }
+}</pre>
+
+    <h2>STEP 3 — 헬스체크 추가 (장애 자동 제외)</h2>
+    <pre>upstream nextjs_servers {
+    server mablog_nextjs_1:8080 max_fails=3 fail_timeout=30s;
+    server mablog_nextjs_2:8080 max_fails=3 fail_timeout=30s;
+    # max_fails=3   : 3번 실패하면 다운 판정
+    # fail_timeout  : 30초 동안 요청 안 보냄 → 이후 다시 시도
+}</pre>
+    <p>서버 하나가 죽어도 Nginx가 자동으로 감지하고 나머지 서버로만 요청을 보낸다.</p>
+
+    <h2>STEP 4 — docker-compose scale 명령어</h2>
+    <pre># 명령어 하나로 컨테이너 개수 조절
+docker-compose up -d --scale mablog_nextjs=3
+
+# 이러면 mablog_nextjs 컨테이너가 3개 자동 생성됨
+# mablog_nextjs_1, mablog_nextjs_2, mablog_nextjs_3</pre>
+    <p>scale을 쓰려면 nginx.conf에서 컨테이너 이름 대신 <strong>서비스 이름</strong>으로 지정해야 한다. Docker가 같은 네트워크 안에서 자동으로 라운드로빈 DNS를 제공한다.</p>
+    <pre>upstream nextjs_servers {
+    server mablog_nextjs:8080;  # 서비스 이름 하나만 써도 됨
+    # Docker가 mablog_nextjs_1, 2, 3 으로 알아서 분산
+}</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 적용 순서 정리</div>
+1. docker-compose.yml에 같은 앱 컨테이너 여러 개 정의
+2. nginx.conf에 upstream 블록으로 서버 그룹 정의
+3. proxy_pass에 upstream 이름 지정
+4. max_fails / fail_timeout으로 장애 서버 자동 제외
+5. --scale 명령어로 컨테이너 수 동적 조절
+
+지금 내 서버는 트래픽이 적어서 필요 없지만
+면접에서 "Scale Out 어떻게 하나요?" 물으면
+이 흐름대로 답할 수 있다.
+    </div>
+  </div>
+
+  <div class="chapter" id="ch12-3">
+    <div class="chapter-num">CHAPTER 12-3</div>
+    <div class="chapter-title">헬스체크와 무중단 배포</div>
+
+    <h2>헬스체크란</h2>
+    <p>"이 서버 지금 살아있어?" 를 주기적으로 확인하는 것이다. 죽은 서버로 요청이 가면 사용자가 에러를 보게 되므로, 로드밸런서가 미리 감지하고 제외해야 한다.</p>
+
+    <h2>Docker 헬스체크</h2>
+    <pre># docker-compose.yml
+mablog_nextjs:
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+        interval: 30s    # 30초마다 확인
+        timeout: 10s     # 10초 안에 응답 없으면 실패
+        retries: 3       # 3번 연속 실패하면 unhealthy 판정
+        start_period: 40s  # 시작 후 40초는 체크 안 함 (부팅 시간 허용)</pre>
+
+    <pre># Next.js API Route — 헬스체크 엔드포인트
+// /api/health/route.ts
+export async function GET() {
+    return Response.json({ status: 'ok', timestamp: new Date() });
+}</pre>
+
+    <h2>무중단 배포 (Zero Downtime Deploy)</h2>
+    <p>새 버전 배포 시 서비스를 잠깐도 끊지 않는 방법이다.</p>
+    <pre># 일반 배포 (중단 있음)
+docker-compose down       # ← 여기서 서비스 중단
+docker-compose up --build # ← 빌드 완료까지 다운타임
+
+# 무중단 배포 순서
+1. 새 버전 이미지 빌드 (기존 컨테이너는 계속 서비스 중)
+   docker-compose build mablog_nextjs
+
+2. 새 컨테이너 하나 추가로 띄우기
+   docker-compose up -d --scale mablog_nextjs=2 --no-recreate
+
+3. Nginx가 자동으로 새 컨테이너 포함해서 분산
+   (헬스체크 통과하면 트래픽 들어옴)
+
+4. 구버전 컨테이너 제거
+   docker-compose up -d --scale mablog_nextjs=1</pre>
+
+    <h2>Blue-Green 배포</h2>
+    <p>가장 안전한 무중단 배포 방식이다.</p>
+    <pre>현재 상태: Blue(구버전) 서비스 중
+                    사용자 ──▶ Nginx ──▶ [Blue]
+
+1단계: Green(신버전) 준비
+                    사용자 ──▶ Nginx ──▶ [Blue]
+                                          [Green] ← 준비 중
+
+2단계: Nginx 설정 변경 (nginx -s reload, 무중단)
+                    사용자 ──▶ Nginx ──▶ [Green]
+                               [Blue] ← 대기 (문제 생기면 즉시 롤백)
+
+3단계: Blue 제거
+                    사용자 ──▶ Nginx ──▶ [Green]</pre>
+
+    <p>문제가 생기면 Nginx 설정만 다시 바꾸면 구버전으로 <strong>즉시 롤백</strong>이 가능하다. 이게 Blue-Green의 핵심이다.</p>
+
+    <h2>Nginx 설정 무중단 반영</h2>
+    <pre># nginx.conf 수정 후 문법 검사
+docker exec mablog_proxy nginx -t
+
+# 검사 통과하면 무중단으로 설정 반영 (서비스 중단 없음)
+docker exec mablog_proxy nginx -s reload</pre>
+    <p><code>nginx -s reload</code>는 기존 연결은 유지하면서 새 설정을 반영한다. <code>restart</code>와 달리 중단이 없다.</p>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+헬스체크      = 서버 생존 여부 주기적 확인
+               → 죽은 서버는 로드밸런서가 자동 제외
+
+무중단 배포   = 서비스 중단 없이 새 버전 배포
+               순서: 새 컨테이너 추가 → 트래픽 전환 → 구버전 제거
+
+Blue-Green    = 구버전/신버전 동시 유지
+               → 문제 생기면 Nginx 설정만 바꿔서 즉시 롤백
+
+nginx -s reload = 설정 반영 (무중단)
+nginx -t        = 설정 문법 검사 (반영 전 필수)
     </div>
   </div>
 

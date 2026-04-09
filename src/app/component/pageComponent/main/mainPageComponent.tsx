@@ -215,7 +215,7 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                     </div>
                 )}
                 {show('server') && (
-                    <div className="gridItem gridItemNginx">
+                    <div className="gridItem gridItemVisitor">
                         <h2 className="moduleTitle">[VISITOR_STATS]</h2>
                         <VisitorStatsWidget />
                     </div>

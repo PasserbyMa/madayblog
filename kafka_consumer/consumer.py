@@ -35,9 +35,14 @@ BOT_PATH_PATTERNS = re.compile(
 # 봇 User-Agent 패턴
 BOT_UA_PATTERNS = re.compile(
     r"(zgrab|masscan|r00ts3c|sqlmap|nikto|nmap|dirbuster|scanner"
-    r"|python-requests|go-http-client|curl|wget|libwww)",
+    r"|python-requests|go-http-client|curl|wget|libwww"
+    r"|palo alto|censys|shodan|qualys|nessus|nuclei|dataforseo"
+    r"|semrush|ahrefs|mj12bot|dotbot|petalbot|bingpreview)",
     re.IGNORECASE,
 )
+
+# UA가 아예 없거나 단순 식별자인 경우도 봇으로 처리
+BOT_EMPTY_UA = re.compile(r"^(-|node|python|go|java|ruby|php)$", re.IGNORECASE)
 
 # 정적 자산 경로 (저장은 하되 방문자 카운트에서 제외할 때 사용)
 STATIC_PATH = re.compile(r"\.(css|js|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|map)(\?.*)?$", re.IGNORECASE)
@@ -54,6 +59,9 @@ def is_bot(record: dict) -> bool:
         return True
     # 악성 경로
     if BOT_PATH_PATTERNS.search(path):
+        return True
+    # UA 없음 또는 단순 식별자
+    if BOT_EMPTY_UA.match(ua.strip()):
         return True
     # 봇 UA
     if BOT_UA_PATTERNS.search(ua):

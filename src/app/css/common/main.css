@@ -199,6 +199,13 @@
     grid-column: 1 / -1;
 }
 
+/* VISITOR_STATS: 전체 너비 + 내용 맞게 높이 자동 */
+.gridItemVisitor {
+    grid-column: 1 / -1;
+    height: auto;
+    min-height: 380px;
+}
+
 /* GITHUB_ACTIVITY: 전체 너비 */
 .gridItemClockFull {
     grid-column: 1 / -1;
