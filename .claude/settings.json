@@ -4,7 +4,9 @@
       "Bash(git push:*)",
       "Bash(ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no pi@172.30.1.57 \"echo connected && uname -a\")",
       "Bash(npm run:*)",
-      "Bash(curl -s https://api.github.com/repos/PasserbyMa/madayblog/commits/__TRACKED_VAR__)"
+      "Bash(curl -s https://api.github.com/repos/PasserbyMa/madayblog/commits/__TRACKED_VAR__)",
+      "mcp__mongodb__find",
+      "mcp__ma-mcp__insert_draft"
     ]
   }
 }

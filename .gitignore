@@ -38,6 +38,9 @@ yarn-error.log*
 # MongoDB 데이터
 mongo_data/
 
+# Ollama 모델 데이터 (용량 크고 개인키 포함)
+ollama_data/
+
 # Elasticsearch 데이터 (바이너리 인덱스 파일)
 elasticsearch_data/
 

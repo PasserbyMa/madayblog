@@ -199,6 +199,12 @@
     grid-column: span 2;
 }
 
+/* SEARCH_SUMMARY: 전체 너비 */
+.gridItemSearch {
+    grid-column: 1 / -1;
+    min-height: 300px;
+}
+
 .nginxLog {
     flex: 1;
     overflow-y: auto;

@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>개발 학습 가이드 — Ma_Dev</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    background: #0d0d0d;
+    color: #c8c8c8;
+    line-height: 1.8;
+    padding: 40px 20px;
+  }
+
+  .book {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* 표지 */
+  .cover {
+    text-align: center;
+    padding: 100px 0;
+    border-bottom: 2px solid #00ff66;
+    margin-bottom: 60px;
+  }
+  .cover-title {
+    font-size: 2.4em;
+    color: #00ff66;
+    letter-spacing: 4px;
+    margin-bottom: 16px;
+  }
+  .cover-sub {
+    font-size: 1em;
+    color: #666;
+    letter-spacing: 2px;
+  }
+  .cover-date {
+    margin-top: 40px;
+    font-size: 0.9em;
+    color: #444;
+  }
+
+  /* 목차 */
+  .toc {
+    background: #111;
+    border: 1px solid #222;
+    border-left: 3px solid #00ff66;
+    padding: 30px 40px;
+    margin-bottom: 60px;
+  }
+  .toc-title {
+    font-size: 1.1em;
+    color: #00ff66;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+  .toc a {
+    display: block;
+    color: #999;
+    text-decoration: none;
+    padding: 4px 0;
+    font-size: 0.95em;
+  }
+  .toc a:hover { color: #00ff66; }
+  .toc-chapter { color: #00ffcc; margin-top: 12px; font-size: 0.85em; }
+  .toc-sub { padding-left: 20px; }
+
+  /* 챕터 */
+  .chapter {
+    margin-bottom: 80px;
+    padding-bottom: 60px;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .chapter-num {
+    font-size: 0.8em;
+    color: #00ffcc;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+  .chapter-title {
+    font-size: 1.8em;
+    color: #ffffff;
+    margin-bottom: 40px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #222;
+  }
+
+  /* 섹션 */
+  h2 {
+    font-size: 1.2em;
+    color: #00ff66;
+    margin: 36px 0 16px;
+    padding-left: 12px;
+    border-left: 3px solid #00ff66;
+  }
+  h3 {
+    font-size: 1em;
+    color: #00ffcc;
+    margin: 24px 0 12px;
+  }
+  p {
+    margin-bottom: 14px;
+    color: #b0b0b0;
+  }
+
+  /* 코드 블록 */
+  pre {
+    background: #0a0a0a;
+    border: 1px solid #1e1e1e;
+    border-left: 3px solid #333;
+    padding: 20px 24px;
+    margin: 16px 0;
+    overflow-x: auto;
+    font-family: 'Consolas', 'D2Coding', monospace;
+    font-size: 0.88em;
+    line-height: 1.7;
+    color: #d4d4d4;
+    white-space: pre;
+  }
+  code {
+    font-family: 'Consolas', 'D2Coding', monospace;
+    background: #1a1a1a;
+    color: #00ff66;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  /* 표 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.92em;
+  }
+  th {
+    background: #111;
+    color: #00ffcc;
+    padding: 10px 16px;
+    text-align: left;
+    border: 1px solid #222;
+    font-weight: normal;
+    letter-spacing: 1px;
+  }
+  td {
+    padding: 10px 16px;
+    border: 1px solid #1e1e1e;
+    color: #aaa;
+  }
+  tr:nth-child(even) td { background: #0d0d0d; }
+
+  /* 강조 */
+  strong { color: #ffffff; font-weight: bold; }
+  em { color: #00ffcc; font-style: normal; }
+
+  /* 요약 박스 */
+  .summary {
+    background: #0a1a0a;
+    border: 1px solid #1a3a1a;
+    border-left: 3px solid #00ff66;
+    padding: 20px 24px;
+    margin: 30px 0;
+    font-family: 'Consolas', monospace;
+    font-size: 0.9em;
+    color: #90ee90;
+    line-height: 1.9;
+  }
+  .summary-title {
+    color: #00ff66;
+    font-size: 0.8em;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+
+  /* 구분선 */
+  hr {
+    border: none;
+    border-top: 1px solid #1e1e1e;
+    margin: 30px 0;
+  }
+
+  /* Q&A */
+  .qa {
+    background: #0d1117;
+    border: 1px solid #222;
+    padding: 16px 20px;
+    margin: 16px 0;
+    border-radius: 2px;
+  }
+  .qa-q { color: #00ffcc; margin-bottom: 8px; font-size: 0.9em; }
+  .qa-a { color: #aaa; font-size: 0.9em; }
+
+  ul, ol {
+    padding-left: 24px;
+    margin: 12px 0;
+    color: #aaa;
+  }
+  li { margin-bottom: 6px; }
+
+  @media print {
+    body { background: white; color: #111; }
+    pre { background: #f5f5f5; color: #111; border-color: #ddd; }
+    .chapter { page-break-before: always; }
+    .cover { page-break-after: always; }
+    h2 { color: #008800; border-color: #008800; }
+    .summary { background: #f0fff0; color: #115511; }
+    code { background: #eee; color: #008800; }
+    a { color: #008800; }
+    th { background: #eee; color: #111; }
+  }
+</style>
+</head>
+<body>
+<div class="book">
+
+  <!-- 표지 -->
+  <div class="cover">
+    <div class="cover-title">DEV STUDY GUIDE</div>
+    <div class="cover-sub">네트워크 · Nginx · Docker · 데이터베이스 · Kafka · API</div>
+    <div class="cover-date">2026.04 — Ma_Dev</div>
+  </div>
+
+  <!-- 목차 -->
+  <div class="toc">
+    <div class="toc-title">// TABLE OF CONTENTS</div>
+
+    <div class="toc-chapter">CHAPTER 1. 네트워크 기초</div>
+    <a class="toc-sub" href="#ch1-1">1-1. IP와 Port</a>
+    <a class="toc-sub" href="#ch1-2">1-2. HTTP 요청이 블로그까지 도달하는 과정</a>
+    <a class="toc-sub" href="#ch1-3">1-3. DNS가 뭔가</a>
+
+    <div class="toc-chapter">CHAPTER 2. Nginx</div>
+    <a class="toc-sub" href="#ch2-1">2-1. 왜 Nginx가 앞에 있어야 하나</a>
+    <a class="toc-sub" href="#ch2-2">2-2. Reverse Proxy 동작 원리</a>
+    <a class="toc-sub" href="#ch2-3">2-3. 지금 내 nginx.conf 직접 해석</a>
+
+    <div class="toc-chapter">CHAPTER 3. Docker</div>
+    <a class="toc-sub" href="#ch3-1">3-1. 컨테이너가 VM이랑 뭐가 다른가</a>
+    <a class="toc-sub" href="#ch3-2">3-2. 이미지와 레이어</a>
+    <a class="toc-sub" href="#ch3-3">3-3. 네트워크 — 컨테이너끼리 어떻게 통신하나</a>
+    <a class="toc-sub" href="#ch3-4">3-4. 지금 내 docker-compose.yml 해석</a>
+
+    <div class="toc-chapter">CHAPTER 4. 데이터베이스</div>
+    <a class="toc-sub" href="#ch4-1">4-1. RDB vs NoSQL — 언제 뭘 쓰나</a>
+    <a class="toc-sub" href="#ch4-2">4-2. MongoDB — 인덱스와 쿼리</a>
+    <a class="toc-sub" href="#ch4-3">4-3. 트랜잭션이 뭔가</a>
+
+    <div class="toc-chapter">CHAPTER 5. Kafka</div>
+    <a class="toc-sub" href="#ch5-1">5-1. 메시지 큐가 왜 필요한가</a>
+    <a class="toc-sub" href="#ch5-2">5-2. Topic, Offset, Consumer Group</a>
+    <a class="toc-sub" href="#ch5-3">5-3. 지금 내 파이프라인 해석</a>
+
+    <div class="toc-chapter">CHAPTER 6. 백엔드 API</div>
+    <a class="toc-sub" href="#ch6-1">6-1. REST API 설계 원칙</a>
+    <a class="toc-sub" href="#ch6-2">6-2. 인증 — JWT vs Session</a>
+    <a class="toc-sub" href="#ch6-3">6-3. Spring Boot로 API 만들기</a>
+
+    <div class="toc-chapter">CHAPTER 7. 크롤링 & AI</div>
+    <a class="toc-sub" href="#ch7-1">7-1. 웹 크롤링 — cheerio로 HTML 파싱</a>
+    <a class="toc-sub" href="#ch7-2">7-2. Ollama — 로컬 AI 모델 실행</a>
+    <a class="toc-sub" href="#ch7-3">7-3. 검색 요약 위젯 전체 구조 해석</a>
+
+    <div class="toc-chapter">CHAPTER 8. 로그 & 모니터링</div>
+    <a class="toc-sub" href="#ch8-1">8-1. 서버 로그를 보는 방법</a>
+    <a class="toc-sub" href="#ch8-2">8-2. execSync — 서버에서 shell 명령어 실행</a>
+    <a class="toc-sub" href="#ch8-3">8-3. 네이버 검색 API 사용하기</a>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 1 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch1-1">
+    <div class="chapter-num">CHAPTER 1-1</div>
+    <div class="chapter-title">IP와 Port</div>
+
+    <h2>IP — 인터넷에서의 주소</h2>
+    <p>현실에서 택배를 보내려면 주소가 필요하듯, 인터넷에서 데이터를 보내려면 <strong>IP 주소</strong>가 필요하다.</p>
+
+    <pre>현실:    서울시 강남구 역삼동 123번지
+인터넷:  129.154.xx.xx  ← 서버 주소</pre>
+
+    <p>IP는 두 종류가 있다.</p>
+
+    <table>
+      <tr><th>종류</th><th>설명</th><th>예시</th></tr>
+      <tr><td><strong>공인 IP</strong></td><td>인터넷에서 식별되는 주소. 전 세계 유일</td><td>OCI 서버 IP</td></tr>
+      <tr><td><strong>사설 IP</strong></td><td>내부 네트워크에서만 사용. 외부 접근 불가</td><td>172.x.x.x (Docker 내부)</td></tr>
+    </table>
+
+    <h2>Port — 건물 안의 호실</h2>
+    <p>IP가 <strong>건물 주소</strong>라면, Port는 <strong>호실 번호</strong>다. 서버는 여러 서비스를 동시에 띄울 수 있고, Port로 구분한다.</p>
+
+    <pre>서버IP:80    → 80호실  (HTTP)
+서버IP:443   → 443호실 (HTTPS)
+서버IP:27017 → 27017호실 (MongoDB)
+서버IP:9092  → 9092호실 (Kafka)</pre>
+
+    <h2>docker-compose의 ports 설정</h2>
+    <pre>ports:
+  - "443:443"   # 외부 443 → 컨테이너 내부 443
+  - "80:80"     # 외부 80  → 컨테이너 내부 80</pre>
+    <p><code>외부포트:내부포트</code> 형식이다. MongoDB에 ports 설정이 없는 건 의도적인 보안 설계 — 외부에서 직접 접근할 수 없게 막아둔 것이다.</p>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+IP   = 서버 주소 (어디로 갈 건지)
+Port = 서비스 번호 (거기서 누구한테 전달할 건지)
+
+공인 IP  = 인터넷에서 보이는 주소
+사설 IP  = 내부에서만 쓰는 주소
+
+ports: "443:443" = 외부:내부 포트 매핑
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch1-2">
+    <div class="chapter-num">CHAPTER 1-2</div>
+    <div class="chapter-title">HTTP 요청이 블로그까지 도달하는 과정</div>
+
+    <h2>HTTP가 뭔가</h2>
+    <p>인터넷에서 데이터를 주고받는 <strong>규칙(프로토콜)</strong>이다. 브라우저와 서버가 대화할 때 형식을 맞춰야 서로 이해할 수 있고, 그 형식이 HTTP다.</p>
+
+    <pre>브라우저: "GET /api/posts 주세요"   ← 요청 (Request)
+서버:     "200 OK, 여기 데이터요"   ← 응답 (Response)</pre>
+
+    <h2>요청의 구조</h2>
+    <pre>GET /api/posts HTTP/1.1
+Host: madayblog.com
+Authorization: Bearer eyJhbGci...
+Content-Type: application/json</pre>
+
+    <table>
+      <tr><th>구성요소</th><th>설명</th><th>예시</th></tr>
+      <tr><td>Method</td><td>뭘 할 건지</td><td>GET, POST, PUT, DELETE</td></tr>
+      <tr><td>Path</td><td>어디서 할 건지</td><td>/api/posts</td></tr>
+      <tr><td>Headers</td><td>부가 정보</td><td>인증, 콘텐츠 타입 등</td></tr>
+    </table>
+
+    <h2>HTTP Method</h2>
+    <table>
+      <tr><th>Method</th><th>의미</th><th>사용 예</th></tr>
+      <tr><td>GET</td><td>데이터 가져와</td><td>글 목록 조회</td></tr>
+      <tr><td>POST</td><td>데이터 만들어</td><td>글 등록</td></tr>
+      <tr><td>PUT/PATCH</td><td>데이터 수정해</td><td>글 수정</td></tr>
+      <tr><td>DELETE</td><td>데이터 지워</td><td>글 삭제</td></tr>
+    </table>
+
+    <h2>요청이 블로그까지 가는 전체 흐름</h2>
+    <pre>브라우저가 "https://madayblog.com/api/posts" 요청
+       │
+① DNS 조회 → "madayblog.com이 어느 IP야?" → 서버IP 반환
+       │
+② 서버IP:443 으로 TCP 연결 (HTTPS라 443)
+       │
+③ Nginx가 받음 → "이 요청 어디로 보내지?"
+       │
+④ /api/* → Next.js:8080 으로 전달
+       │
+⑤ Next.js가 처리 → MongoDB 조회
+       │
+⑥ 응답 역순으로 반환: Next.js → Nginx → 브라우저</pre>
+
+    <h2>HTTP vs HTTPS</h2>
+    <table>
+      <tr><th></th><th>HTTP</th><th>HTTPS</th></tr>
+      <tr><td>데이터</td><td>평문 전송 (중간에 읽힘)</td><td>암호화 전송 (읽을 수 없음)</td></tr>
+      <tr><td>포트</td><td>80</td><td>443</td></tr>
+      <tr><td>인증서</td><td>불필요</td><td>SSL 인증서 필요 (Certbot)</td></tr>
+    </table>
+
+    <h2>응답 상태 코드</h2>
+    <table>
+      <tr><th>코드</th><th>의미</th><th>언제</th></tr>
+      <tr><td>200</td><td>성공</td><td>정상 응답</td></tr>
+      <tr><td>201</td><td>생성됨</td><td>POST 성공</td></tr>
+      <tr><td>401</td><td>인증 안됨</td><td>로그인 필요</td></tr>
+      <tr><td>403</td><td>권한 없음</td><td>관리자 아님</td></tr>
+      <tr><td>404</td><td>못 찾음</td><td>없는 경로</td></tr>
+      <tr><td>500</td><td>서버 에러</td><td>서버 코드 오류</td></tr>
+    </table>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+HTTP  = 브라우저와 서버가 대화하는 규칙
+HTTPS = HTTP + 암호화 (Certbot이 인증서 관리)
+
+요청 = Method(뭘) + Path(어디서) + Headers(부가정보)
+응답 = 상태코드 + 데이터
+
+흐름: 브라우저 → DNS → Nginx → Next.js → MongoDB
+                              ← 역순으로 응답
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch1-3">
+    <div class="chapter-num">CHAPTER 1-3</div>
+    <div class="chapter-title">DNS가 뭔가</div>
+
+    <h2>전화번호부</h2>
+    <p>사람은 "naver.com"으로 기억하지만, 컴퓨터는 IP 주소로만 통신한다. DNS는 <strong>도메인 → IP 주소로 변환해주는 전화번호부</strong>다.</p>
+
+    <pre>사람이 입력:  naver.com
+DNS가 변환:  223.130.200.107
+컴퓨터가 접속: 223.130.200.107:443</pre>
+
+    <h2>변환 과정</h2>
+    <pre>① 브라우저 캐시 확인 → 있으면 바로 접속
+② OS 캐시 확인
+③ DNS 서버에 질문 → "naver.com IP가 뭐야?" → IP 반환
+④ 그 IP로 접속</pre>
+    <p>이 과정이 수십 밀리초 안에 끝나서 체감하지 못한다.</p>
+
+    <h2>DNS 레코드 종류</h2>
+    <table>
+      <tr><th>레코드</th><th>역할</th><th>예시</th></tr>
+      <tr><td><strong>A</strong></td><td>도메인 → IPv4 주소</td><td>madayblog.com → 서버IP</td></tr>
+      <tr><td><strong>CNAME</strong></td><td>도메인 → 다른 도메인</td><td>www.example.com → example.com</td></tr>
+      <tr><td><strong>MX</strong></td><td>이메일 서버 주소</td><td>메일 받을 서버 지정</td></tr>
+      <tr><td><strong>TXT</strong></td><td>텍스트 정보</td><td>도메인 소유 인증</td></tr>
+    </table>
+
+    <h2>TTL — 캐시 유효 시간</h2>
+    <p>DNS 응답에는 <strong>TTL(Time To Live)</strong>이 붙는다. "이 정보는 N초 동안 믿어도 돼"라는 의미다.</p>
+    <pre>IP를 바꿨는데 왜 아직 구 서버로 접속되지?
+→ TTL이 아직 안 지났기 때문
+→ TTL 시간만큼 기다려야 전파 완료 (최대 48시간)</pre>
+
+    <h2>Certbot과 DNS의 연결</h2>
+    <p>Certbot이 SSL 인증서 발급받을 때 Let's Encrypt가 "이 서버 진짜 주인 맞아?"를 확인한다. HTTP 방식은 <code>/.well-known/acme-challenge/</code> 경로에 파일을 올려서 증명한다. nginx.conf에 해당 경로 설정이 있는 이유가 이것이다.</p>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+DNS      = 도메인을 IP로 변환하는 전화번호부
+A 레코드 = 도메인 → IP 매핑 (블로그에서 쓰는 것)
+TTL      = DNS 캐시 유효 시간 (IP 바꾸면 이 시간만큼 전파 지연)
+
+흐름: 도메인 입력 → DNS 조회 → IP 획득 → 서버 접속
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 2 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch2-1">
+    <div class="chapter-num">CHAPTER 2-1</div>
+    <div class="chapter-title">왜 Nginx가 앞에 있어야 하나</div>
+
+    <h2>Nginx 없이 직접 연결하면?</h2>
+    <pre>문제 1. 포트 번호를 직접 써야 함
+        https://madayblog.com:3000  ← 이상함
+
+문제 2. HTTPS 처리를 Next.js가 직접 해야 함
+        SSL 인증서 관리 복잡
+
+문제 3. 서비스가 여러 개면?
+        Next.js:3000, Spring Boot:8080 → 외부에서 어떻게 구분?
+
+문제 4. 보안
+        서버 내부 구조가 외부에 그대로 노출됨</pre>
+
+    <h2>Nginx가 해결하는 것</h2>
+    <pre>외부 세계          Nginx(문지기)       내부 서버들
+
+https://도메인 → ① HTTPS 처리    → Next.js:8080
+                 ② 경로 분기     → Spring Boot:8080
+                 ③ 내부 구조 숨김
+                 ④ 보안 필터링</pre>
+
+    <h2>나중에 Spring Boot 추가하면</h2>
+    <pre>         Nginx
+           │
+   ┌───────┼────────┐
+   │       │        │
+ /api/    /stats/  그 외
+ posts    visits
+   │       │        │
+   ▼       ▼        ▼
+Next.js  Spring    Next.js
+         Boot      (페이지)</pre>
+    <p>Nginx 설정만 바꾸면 새 서비스를 붙일 수 있다. 이게 핵심이다.</p>
+
+    <h2>Forward Proxy vs Reverse Proxy</h2>
+    <table>
+      <tr><th></th><th>Forward Proxy</th><th>Reverse Proxy</th></tr>
+      <tr><td>누구를 위한 것</td><td>클라이언트</td><td>서버</td></tr>
+      <tr><td>숨기는 것</td><td>클라이언트 IP</td><td>서버 내부 구조</td></tr>
+      <tr><td>실제 사용</td><td>VPN, 사내망</td><td>Nginx, 로드밸런서</td></tr>
+    </table>
+
+    <div class="qa">
+      <div class="qa-q">Q. Forward와 Reverse가 그림이 똑같아 보이는데 뭐가 달라?</div>
+      <div class="qa-a">A. 누구를 위한 프록시냐가 다르다. Forward는 내가 인터넷에 접속할 때 내가 누군지 숨겨주고, Reverse는 내가 접속하려는 서버가 어떤지를 숨겨준다.</div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+Nginx = 문지기 (Reverse Proxy)
+
+역할:
+  ① HTTPS 처리 (SSL 인증서 관리)
+  ② 요청을 내부 서버로 전달
+  ③ 내부 구조 숨김 (보안)
+  ④ 여러 서비스를 하나의 도메인으로 연결
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch2-2">
+    <div class="chapter-num">CHAPTER 2-2</div>
+    <div class="chapter-title">Reverse Proxy 동작 원리</div>
+
+    <h2>요청이 Nginx를 거치는 과정</h2>
+    <pre>① 사용자가 https://madayblog.com/api/posts 요청
+② Nginx가 받음 → 설정 파일 확인
+③ /api/ 경로 → Next.js:8080 으로 전달
+④ Next.js 처리 → MongoDB 조회 → 응답 생성
+⑤ Next.js → Nginx → 사용자
+
+사용자는 Nginx하고만 대화. Next.js가 있는지도 모름.</pre>
+
+    <h2>Nginx가 요청 전달 시 추가하는 헤더</h2>
+    <pre>X-Real-IP: 123.456.789.0        ← 진짜 사용자 IP
+X-Forwarded-For: 123.456.789.0  ← 거쳐온 IP 목록
+X-Forwarded-Proto: https        ← 원래 프로토콜
+Host: madayblog.com             ← 원래 도메인</pre>
+    <p>nginx.conf에 <code>proxy_set_header X-Real-IP $remote_addr;</code>가 있는 이유다. Next.js가 진짜 사용자 IP를 알 수 있게 해준다.</p>
+
+    <h2>upstream — 내부 서버 묶음</h2>
+    <pre>upstream nextjs_upstream {
+    server mablog_nextjs:8080;
+}
+
+# 여러 서버로 묶으면 로드밸런싱
+upstream nextjs_upstream {
+    server nextjs_1:8080;
+    server nextjs_2:8080;
+    server nextjs_3:8080;
+}</pre>
+
+    <h2>로드밸런싱 알고리즘</h2>
+    <table>
+      <tr><th>방식</th><th>동작</th><th>설정</th><th>언제</th></tr>
+      <tr><td>Round Robin</td><td>순서대로 (기본값)</td><td>별도 설정 없음</td><td>일반적인 경우</td></tr>
+      <tr><td>Least Conn</td><td>연결 적은 서버로</td><td>least_conn;</td><td>요청 무게 들쑥날쑥</td></tr>
+      <tr><td>IP Hash</td><td>같은 IP → 같은 서버</td><td>ip_hash;</td><td>세션 유지 필요 (옛날 방식)</td></tr>
+    </table>
+
+    <div class="qa">
+      <div class="qa-q">Q. IP Hash가 제일 무난한가?</div>
+      <div class="qa-a">A. 아니다. 요즘은 세션을 Redis 같은 별도 저장소에 두기 때문에 어느 서버로 가도 세션이 공유된다. Round Robin으로 충분한 경우가 대부분이다. IP Hash는 옛날 방식.</div>
+    </div>
+
+    <h2>location — 경로별 분기</h2>
+    <pre>location /api/ {
+    proxy_pass http://nextjs_upstream;
+}
+
+location /stats/ {
+    proxy_pass http://springboot:8080;  # 나중에 추가
+}
+
+location / {
+    proxy_pass http://nextjs_upstream;
+}</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+Nginx의 핵심 역할:
+
+① location으로 경로 보고 판단
+② proxy_pass로 내부 서버에 전달
+③ 헤더 추가해서 사용자 정보 전달
+④ upstream으로 여러 서버 묶어서 부하 분산
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch2-3">
+    <div class="chapter-num">CHAPTER 2-3</div>
+    <div class="chapter-title">지금 내 nginx.conf 직접 해석</div>
+
+    <h2>전체 구조</h2>
+    <pre>events {}   ← Nginx 내부 동작 설정 (비어있음 = 기본값)
+http {      ← HTTP 관련 설정 전부 여기 안에
+    ...
+}</pre>
+
+    <h2>로그 설정</h2>
+    <pre>log_format custom_log '$remote_addr - $remote_user [$time_local] '
+                      '"$request" $status $body_bytes_sent '
+                      '"$http_referer" "$http_user_agent" '
+                      'RT=$request_time';</pre>
+    <table>
+      <tr><th>변수</th><th>의미</th></tr>
+      <tr><td>$remote_addr</td><td>접속한 사람 IP</td></tr>
+      <tr><td>$time_local</td><td>접속 시간</td></tr>
+      <tr><td>$request</td><td>"GET /api/posts HTTP/1.1" 같은 요청 내용</td></tr>
+      <tr><td>$status</td><td>응답 코드 (200, 404 등)</td></tr>
+      <tr><td>$request_time</td><td>응답까지 걸린 시간</td></tr>
+    </table>
+    <pre>access_log /dev/stdout custom_log;          # Docker 로그 출력
+access_log /var/log/nginx/access.log custom_log; # 파일 저장 (Logstash가 읽음)</pre>
+    <p>두 곳에 동시에 기록한다. <code>/var/log/nginx/access.log</code>가 Logstash → Kafka 파이프라인의 시작점이다.</p>
+
+    <h2>upstream</h2>
+    <pre>upstream nextjs_upstream {
+    server mablog_nextjs:8080;
+}</pre>
+    <p>아래에서 <code>proxy_pass http://nextjs_upstream</code>으로 참조한다.</p>
+
+    <h2>HTTP 서버 (80 포트)</h2>
+    <pre>server {
+    listen 80;
+    server_name madayblog.com www.madayblog.com;
+
+    # Certbot 인증서 갱신용
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # 나머지 전부 HTTPS로 강제 이동
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}</pre>
+    <p><strong>301</strong>은 "영구 이동" 상태 코드다. 브라우저가 받으면 자동으로 https로 다시 요청한다.</p>
+
+    <h2>HTTPS 서버 (443 포트)</h2>
+    <pre>listen 443 ssl http2;
+
+ssl_certificate /etc/letsencrypt/live/madayblog.com/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/madayblog.com/privkey.pem;
+
+ssl_protocols TLSv1.2 TLSv1.3;  # 오래된 버전 차단</pre>
+
+    <h2>Proxy 설정 핵심</h2>
+    <pre>proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection "upgrade";</pre>
+    <p>이 세 줄이 <strong>WebSocket / SSE 지원</strong>을 위한 설정이다. Docker 컨테이너 상태를 실시간 스트림(SSE)으로 받아오는 기능이 이것 때문에 동작한다.</p>
+
+    <h2>전체 흐름</h2>
+    <pre>사용자 → http://madayblog.com
+            │
+         80 포트 → 301 리다이렉트
+            │
+         https://madayblog.com
+            │
+         443 포트 → SSL 복호화
+            │
+         location / 매칭
+            │
+         proxy_pass → mablog_nextjs:8080
+            │
+         Next.js 처리 → 응답</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+80 포트  = HTTP 접속 → HTTPS로 강제 리다이렉트 (301)
+443 포트 = HTTPS 처리 → Next.js로 전달
+
+Upgrade/Connection 헤더 = WebSocket/SSE 지원
+ssl_protocols TLSv1.2/1.3 = 오래된 TLS 차단 (보안)
+로그 두 곳 저장 = Docker stdout + 파이프라인 파일
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 3 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch3-1">
+    <div class="chapter-num">CHAPTER 3-1</div>
+    <div class="chapter-title">컨테이너가 VM이랑 뭐가 다른가</div>
+
+    <h2>VM — 컴퓨터 안에 컴퓨터</h2>
+    <pre>물리 서버
+└── Hypervisor
+    ├── VM 1: OS + 라이브러리 + 앱  (수 GB)
+    ├── VM 2: OS + 라이브러리 + 앱  (수 GB)
+    └── VM 3: OS + 라이브러리 + 앱  (수 GB)</pre>
+    <p>OS를 통째로 올리니까 시작에 수 분 걸리고, VM 하나당 수 GB를 차지한다.</p>
+
+    <h2>Container — 프로세스 격리</h2>
+    <pre>물리 서버
+└── OS (Linux) ← 하나, 공유
+    └── Docker Engine
+        ├── 컨테이너 1 (Next.js): 라이브러리 + 앱  (수백 MB)
+        ├── 컨테이너 2 (MongoDB): 라이브러리 + 앱
+        └── 컨테이너 3 (Nginx):  라이브러리 + 앱</pre>
+    <p>OS를 공유하니까 시작에 수 초 걸리고, 가볍고 빠르다.</p>
+
+    <h2>비교</h2>
+    <table>
+      <tr><th>구분</th><th>VM</th><th>컨테이너</th></tr>
+      <tr><td>OS</td><td>각자 따로</td><td>호스트 공유</td></tr>
+      <tr><td>시작 시간</td><td>수 분</td><td>수 초</td></tr>
+      <tr><td>용량</td><td>수 GB</td><td>수 MB~수백 MB</td></tr>
+      <tr><td>격리 수준</td><td>완전 격리</td><td>프로세스 격리</td></tr>
+    </table>
+
+    <h2>지금 내 서버 구조</h2>
+    <pre>Oracle 물리 서버
+└── Hypervisor
+    └── 내 OCI VM  ← Oracle이 빌려준 가상 서버
+        └── Docker Engine
+            ├── mablog_nextjs
+            ├── mablog_mongodb
+            ├── mablog_nginx
+            └── ...</pre>
+    <p>OCI 서버 자체가 이미 VM이다. Oracle이 물리 서버 위에 VM을 만들어서 빌려준 것. 그 VM 위에서 Docker 컨테이너를 돌리는 구조다.</p>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+VM         = 컴퓨터 안에 컴퓨터 (OS 통째로)
+컨테이너   = OS 공유, 앱 환경만 격리
+
+VM    → 무겁지만 완전 격리 (클라우드 멀티테넌시에 안전)
+컨테이너 → 가볍고 빠르지만 OS 공유
+
+지금 내 환경 = OCI VM 위에서 Docker 컨테이너 실행
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch3-2">
+    <div class="chapter-num">CHAPTER 3-2</div>
+    <div class="chapter-title">이미지와 레이어</div>
+
+    <h2>이미지가 뭔가</h2>
+    <p>컨테이너를 실행하려면 <strong>이미지</strong>가 필요하다. 이미지는 앱 실행에 필요한 모든 것을 담은 <strong>템플릿</strong>이다.</p>
+    <pre>이미지   →  컨테이너
+붕어빵 틀 →  붕어빵
+
+같은 이미지로 컨테이너를 몇 개든 찍어낼 수 있다.</pre>
+
+    <h2>레이어 구조</h2>
+    <p>이미지는 하나의 덩어리가 아니라 <strong>레이어를 쌓아서</strong> 만든다. Dockerfile의 각 줄이 레이어 하나다.</p>
+    <pre>FROM node:18-alpine        ← 레이어 1 (베이스)
+WORKDIR /app               ← 레이어 2
+COPY package.json .        ← 레이어 3
+RUN npm install            ← 레이어 4 (가장 무거움)
+COPY . .                   ← 레이어 5
+RUN npm run build          ← 레이어 6</pre>
+
+    <h2>레이어 캐싱</h2>
+    <p>레이어는 <strong>변경된 레이어부터만 다시 빌드</strong>한다.</p>
+    <pre>레이어 1~4: ✅ 캐시 사용 (변경 없음)
+레이어 5:   ❌ 코드 변경됨 → 여기서부터 다시 빌드
+레이어 6:   ❌ 다시 빌드</pre>
+
+    <pre># 잘못된 순서 (매번 npm install 다시 함)
+COPY . .
+RUN npm install
+
+# 올바른 순서 (package.json 안 바뀌면 캐시 사용)
+COPY package.json .
+RUN npm install
+COPY . .      ← 소스코드는 여기서 복사</pre>
+
+    <h2>멀티 스테이지 빌드</h2>
+    <pre># 1단계 - 빌드
+FROM node:18-alpine AS builder
+RUN npm install && npm run build
+
+# 2단계 - 실행 (빌드 결과물만 가져옴)
+FROM node:18-alpine AS runner
+COPY --from=builder /app/.next ./.next
+CMD ["node", "server.js"]</pre>
+
+    <table>
+      <tr><th></th><th>멀티 스테이지 없이</th><th>멀티 스테이지 적용</th></tr>
+      <tr><td>이미지 크기</td><td>~1GB</td><td>~200MB</td></tr>
+      <tr><td>포함 내용</td><td>빌드 도구 + node_modules + 결과물</td><td>결과물만</td></tr>
+    </table>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+이미지   = 컨테이너 실행을 위한 템플릿 (붕어빵 틀)
+레이어   = 이미지를 구성하는 단계별 조각
+
+레이어 캐싱   = 변경된 레이어부터만 다시 빌드
+               → package.json 먼저 복사하는 이유
+
+멀티 스테이지 = 빌드용/실행용 단계 분리
+               → 최종 이미지 크기 대폭 감소
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch3-3">
+    <div class="chapter-num">CHAPTER 3-3</div>
+    <div class="chapter-title">네트워크 — 컨테이너끼리 어떻게 통신하나</div>
+
+    <h2>기본 개념</h2>
+    <p>컨테이너는 각자 격리된 환경이라 기본적으로 서로 통신이 안 된다. 통신하려면 같은 <strong>네트워크</strong>에 묶어야 한다.</p>
+
+    <h2>Docker 네트워크 종류</h2>
+    <table>
+      <tr><th>종류</th><th>설명</th><th>사용 시점</th></tr>
+      <tr><td><strong>bridge</strong></td><td>기본값. 가상 내부 네트워크 생성</td><td>일반적인 경우 (지금 내 설정)</td></tr>
+      <tr><td><strong>host</strong></td><td>호스트 네트워크 그대로 사용</td><td>성능이 중요할 때</td></tr>
+      <tr><td><strong>none</strong></td><td>네트워크 없음</td><td>완전 격리 필요</td></tr>
+    </table>
+
+    <h2>같은 네트워크 = 이름으로 통신</h2>
+    <pre>networks:
+    mablog_network:
+        driver: bridge
+
+# 같은 네트워크 안이면 컨테이너 이름으로 통신 가능
+mongodb://mablog_mongodb:27017     ← Next.js → MongoDB
+http://elasticsearch:9200          ← Logstash → Elasticsearch
+kafka://mablog_kafka:9092          ← Logstash → Kafka
+
+IP 주소 몰라도 된다. 컨테이너 이름이 곧 도메인.</pre>
+
+    <h2>외부 접근 = ports 설정</h2>
+    <pre># Nginx만 외부에 포트 오픈
+mablog_proxy:
+    ports:
+        - "80:80"
+        - "443:443"
+
+# MongoDB는 ports 없음 → 외부 접근 불가 (의도적 보안)</pre>
+
+    <pre>외부 인터넷
+    │
+    ▼
+Nginx (80, 443 오픈)
+    │ 내부 네트워크
+    ▼
+Next.js, MongoDB, Kafka ...
+(외부에서 직접 접근 불가)</pre>
+
+    <h2>alias — 컨테이너에 별명 붙이기</h2>
+    <pre>mablog_elasticsearch:
+    networks:
+        mablog_network:
+            aliases:
+                - elasticsearch  # 언더스코어 없는 이름으로 접근 가능</pre>
+    <p>Logstash가 <code>http://elasticsearch:9200</code>으로 접속 가능한 이유다. 컨테이너 이름에 언더스코어가 있으면 Java URI 파서가 거부하기 때문에 alias로 해결한 것이다.</p>
+
+    <h2>전체 통신 흐름</h2>
+    <pre>외부 사용자
+    │ HTTPS
+    ▼
+[mablog_proxy]        ← 유일하게 외부에 열려있음
+    │ http://mablog_nextjs:8080
+    ▼
+[mablog_nextjs]
+    │ mongodb://mablog_mongodb:27017
+    ▼
+[mablog_mongodb]
+
+[mablog_proxy]        ← 로그 파일 볼륨 마운트
+    │
+    ▼
+[mablog_logstash]
+    │ kafka://mablog_kafka:9092
+    ▼
+[mablog_kafka]
+    │
+    ▼
+[mablog_elasticsearch]
+    │
+    ▼
+[mablog_kibana]
+
+전부 mablog_network 안에서 이름으로 통신
+외부로 열린 건 Nginx 뿐</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+Docker 네트워크 = 컨테이너들이 통신하는 사설 공간
+같은 네트워크  = 컨테이너 이름으로 통신 가능
+ports 설정     = 외부에 포트 오픈
+alias          = 컨테이너에 별명 추가
+
+보안 원칙: 외부에는 Nginx만 열고
+           나머지는 전부 내부 네트워크에 숨김
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 3-4 -->
+  <!-- ======================== -->
+  <div class="chapter" id="ch3-4">
+    <div class="chapter-num">CHAPTER 3-4</div>
+    <div class="chapter-title">지금 내 docker-compose.yml 해석</div>
+
+    <h2>전체 구조</h2>
+    <pre>services:
+    db (MongoDB)
+    mablog_nextjs
+    mablog_proxy (Nginx)
+    certbot
+    mablog_kafka
+    mablog_elasticsearch
+    mablog_logstash
+    mablog_kibana
+
+networks:
+    mablog_network (bridge)</pre>
+
+    <h2>depends_on — 실행 순서</h2>
+    <p>컨테이너가 올라오는 순서를 제어한다.</p>
+    <pre>mablog_nextjs:
+    depends_on:
+        - db          ← MongoDB가 먼저 올라와야 Next.js 시작
+
+mablog_proxy:
+    depends_on:
+        - mablog_nextjs  ← Next.js가 먼저 올라와야 Nginx 시작
+
+mablog_logstash:
+    depends_on:
+        - mablog_kafka
+        - mablog_elasticsearch</pre>
+    <p>단, <code>depends_on</code>은 컨테이너가 <strong>시작</strong>됐을 때를 기준으로 한다. DB가 완전히 준비됐는지는 보장하지 않는다.</p>
+
+    <h2>expose vs ports</h2>
+    <table>
+      <tr><th></th><th>expose</th><th>ports</th></tr>
+      <tr><td>외부 접근</td><td>불가</td><td>가능</td></tr>
+      <tr><td>내부 접근</td><td>가능</td><td>가능</td></tr>
+      <tr><td>용도</td><td>컨테이너끼리 통신</td><td>외부에 포트 오픈</td></tr>
+      <tr><td>예시</td><td>Next.js (8080)</td><td>Nginx (80, 443)</td></tr>
+    </table>
+    <pre># Next.js는 외부에서 직접 접근 불필요 → expose
+mablog_nextjs:
+    expose:
+        - '8080'
+
+# Nginx는 외부 접근 필요 → ports
+mablog_proxy:
+    ports:
+        - '80:80'
+        - '443:443'</pre>
+
+    <h2>volumes — 데이터 영속성</h2>
+    <p>컨테이너는 종료되면 내부 데이터가 사라진다. <code>volumes</code>로 호스트 디렉토리와 연결하면 컨테이너가 재시작돼도 데이터가 유지된다.</p>
+    <pre># MongoDB 데이터를 호스트에 저장
+db:
+    volumes:
+        - ./mongo_data:/data/db   # 호스트경로:컨테이너경로
+
+# Nginx 로그를 호스트에 저장 (Logstash가 같이 읽음)
+mablog_proxy:
+    volumes:
+        - ./nginx_logs:/var/log/nginx
+
+# Logstash가 같은 nginx_logs 디렉토리를 읽기 전용으로 마운트
+mablog_logstash:
+    volumes:
+        - ./nginx_logs:/var/log/nginx:ro  # ro = read only</pre>
+
+    <h2>environment — 환경 변수</h2>
+    <pre>mablog_kafka:
+    environment:
+        - KAFKA_NODE_ID=1
+        - KAFKA_PROCESS_ROLES=broker,controller
+        - KAFKA_HEAP_OPTS=-Xms256m -Xmx256m   ← JVM 힙 메모리 제한
+
+mablog_elasticsearch:
+    environment:
+        - discovery.type=single-node    ← 단일 노드 (클러스터 불필요)
+        - xpack.security.enabled=false  ← 내부망이라 인증 비활성화
+        - ES_JAVA_OPTS=-Xms512m -Xmx512m</pre>
+
+    <h2>Kafka KRaft 모드</h2>
+    <p>원래 Kafka는 메타데이터 관리를 위해 Zookeeper가 별도로 필요했다. KRaft 모드는 Kafka 자체가 메타데이터를 관리해서 <strong>Zookeeper 없이 단독 실행</strong>이 가능하다.</p>
+    <pre>KAFKA_PROCESS_ROLES=broker,controller
+# broker  = 메시지 저장/전달
+# controller = 클러스터 메타데이터 관리
+# 둘 다 하나의 컨테이너에서 처리</pre>
+
+    <h2>전체 데이터 흐름</h2>
+    <pre>사용자 접속
+    │
+    ▼
+[Nginx] → 로그 기록 (nginx_logs/)
+    │
+    ▼
+[Next.js] → MongoDB 조회/저장
+    │
+[Logstash] → nginx_logs/ 읽음
+    │          grok으로 파싱
+    ├──────→ [Kafka] 토픽에 전송
+    └──────→ [Elasticsearch] 직접 저장
+                    │
+               [Kibana] 시각화</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+depends_on = 컨테이너 시작 순서 제어
+expose     = 내부 통신용 포트 (외부 비공개)
+ports      = 외부 오픈 포트
+volumes    = 호스트 디렉토리 연결 (데이터 영속성)
+:ro        = 읽기 전용 마운트
+
+KRaft = Zookeeper 없이 Kafka 단독 실행 모드
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 4 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch4-1">
+    <div class="chapter-num">CHAPTER 4-1</div>
+    <div class="chapter-title">RDB vs NoSQL — 언제 뭘 쓰나</div>
+
+    <h2>RDB — 관계형 데이터베이스</h2>
+    <p>데이터를 <strong>표(테이블)</strong> 형태로 저장한다. 행과 열이 있고, 미리 스키마(구조)를 정해야 한다.</p>
+    <pre>users 테이블
+┌────┬────────┬──────────────────┐
+│ id │  name  │      email       │
+├────┼────────┼──────────────────┤
+│  1 │ 이학송 │ test@example.com │
+│  2 │ 홍길동 │ hong@example.com │
+└────┴────────┴──────────────────┘
+
+posts 테이블
+┌────┬──────────────┬─────────┐
+│ id │    title     │ user_id │
+├────┼──────────────┼─────────┤
+│  1 │ Docker 가이드 │    1    │
+└────┴──────────────┴─────────┘</pre>
+    <p><code>user_id</code>로 users 테이블과 연결 — 이게 "관계형"의 의미다. 대표적으로 MySQL, PostgreSQL, Oracle이 있다.</p>
+
+    <h2>NoSQL — 비관계형 데이터베이스</h2>
+    <p>표 대신 <strong>문서(Document)</strong>, 키-값, 그래프 등 다양한 형태로 저장한다. 스키마가 유연하다.</p>
+    <pre>// MongoDB 문서 (JSON 형태)
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "title": "Docker 가이드",
+  "content": "...",
+  "category": "study",
+  "tags": ["docker", "infra"],   ← 배열도 그냥 넣음
+  "author": {                     ← 중첩 객체도 가능
+    "name": "이학송",
+    "github": "PasserbyMa"
+  }
+}</pre>
+
+    <h2>비교</h2>
+    <table>
+      <tr><th></th><th>RDB (PostgreSQL 등)</th><th>NoSQL (MongoDB 등)</th></tr>
+      <tr><td>구조</td><td>테이블, 행, 열</td><td>문서, 컬렉션</td></tr>
+      <tr><td>스키마</td><td>미리 고정</td><td>유연 (없어도 됨)</td></tr>
+      <tr><td>관계</td><td>JOIN으로 연결</td><td>문서 안에 직접 포함</td></tr>
+      <tr><td>트랜잭션</td><td>강력 (ACID 보장)</td><td>제한적</td></tr>
+      <tr><td>장점</td><td>데이터 정합성, 복잡한 쿼리</td><td>빠른 개발, 유연한 구조</td></tr>
+    </table>
+
+    <h2>언제 뭘 쓰나</h2>
+    <table>
+      <tr><th>상황</th><th>선택</th><th>이유</th></tr>
+      <tr><td>블로그 포스트, 상품 카탈로그</td><td>NoSQL</td><td>구조가 자주 바뀜, 빠른 개발</td></tr>
+      <tr><td>은행, 결제, 주문</td><td>RDB</td><td>트랜잭션, 데이터 정합성 필수</td></tr>
+      <tr><td>방문자 통계, 로그 분석</td><td>RDB</td><td>복잡한 집계 쿼리</td></tr>
+      <tr><td>실시간 채팅, 알림</td><td>NoSQL 또는 Redis</td><td>빠른 읽기/쓰기</td></tr>
+    </table>
+
+    <div class="qa">
+      <div class="qa-q">Q. 블로그에 MongoDB를 선택한 이유?</div>
+      <div class="qa-a">A. 포스트 구조가 자주 바뀔 수 있고 (필드 추가/삭제), 빠른 개발이 목적이었기 때문이다. 관계 데이터가 복잡하지 않아 NoSQL로 충분했다.</div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+RDB   = 테이블 구조, 스키마 고정, 관계·트랜잭션 강력
+NoSQL = 문서 구조, 스키마 유연, 빠른 개발
+
+정답은 없다. 데이터 특성에 맞게 선택하는 것이 맞다.
+실무에서는 둘을 혼용하는 경우가 많다.
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch4-2">
+    <div class="chapter-num">CHAPTER 4-2</div>
+    <div class="chapter-title">MongoDB — 인덱스와 쿼리</div>
+
+    <h2>컬렉션과 문서</h2>
+    <pre>RDB 용어    →  MongoDB 용어
+데이터베이스 →  데이터베이스
+테이블       →  컬렉션 (Collection)
+행 (Row)     →  문서 (Document)
+열 (Column)  →  필드 (Field)</pre>
+
+    <h2>기본 쿼리</h2>
+    <pre>// 전체 조회
+db.posts.find({})
+
+// 조건 조회
+db.posts.find({ category: "study" })
+
+// 정렬 (날짜 내림차순)
+db.posts.find({}).sort({ date: -1 })
+
+// 페이지네이션
+db.posts.find({}).skip(10).limit(10)  // 11~20번째
+
+// 검색 (정규식)
+db.posts.find({ title: { $regex: "docker", $options: "i" } })</pre>
+
+    <h2>내 코드에서 쓰는 쿼리</h2>
+    <pre>// GETmDBTypePosts.ts 에서
+const filter = query
+  ? { $or: [
+      { title:    { $regex: query, $options: 'i' } },
+      { category: { $regex: query, $options: 'i' } },
+    ]}
+  : {};
+
+// 검색 + 정렬 + 페이지네이션 한번에
+const posts = await ModelPostsSetting.find(filter)
+  .sort({ date: -1 })
+  .skip((page - 1) * limit)
+  .limit(limit)
+  .lean();</pre>
+    <p><code>.lean()</code>은 Mongoose Document 객체가 아닌 순수 JS 객체로 반환한다. 직렬화가 필요 없어 성능이 좋다.</p>
+
+    <h2>인덱스 — 검색 속도 향상</h2>
+    <p>책의 색인(index)과 같다. 특정 필드에 인덱스를 걸면 전체 데이터를 스캔하지 않아도 빠르게 찾을 수 있다.</p>
+    <pre>// 인덱스 없이 검색 (Full Scan)
+100만 개 문서를 전부 뒤짐 → 느림
+
+// date 필드에 인덱스 추가
+db.posts.createIndex({ date: -1 })
+
+// 이후 날짜 기준 정렬/검색이 빨라짐</pre>
+    <table>
+      <tr><th>인덱스 종류</th><th>용도</th></tr>
+      <tr><td>단일 필드</td><td>하나의 필드로 검색할 때</td></tr>
+      <tr><td>복합 인덱스</td><td>여러 필드 조합으로 검색할 때</td></tr>
+      <tr><td>텍스트 인덱스</td><td>문자열 전문 검색</td></tr>
+    </table>
+
+    <h2>Aggregation — 집계</h2>
+    <p>데이터를 그룹화하거나 통계를 낼 때 사용한다.</p>
+    <pre>// 카테고리별 포스트 수 집계 (내 코드에서)
+db.posts.aggregate([
+  { $group: { _id: '$category', count: { $sum: 1 } } },
+  { $sort: { count: -1 } }
+])
+
+// 결과
+[
+  { _id: "study", count: 8 },
+  { _id: "error", count: 5 },
+  { _id: "hobby", count: 2 }
+]</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+컬렉션 = 테이블, 문서 = 행
+.lean()  = 순수 JS 객체 반환 (성능 향상)
+인덱스  = 검색 속도 향상 (책의 색인)
+aggregate = 그룹화, 통계, 집계
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch4-3">
+    <div class="chapter-num">CHAPTER 4-3</div>
+    <div class="chapter-title">트랜잭션이 뭔가</div>
+
+    <h2>트랜잭션의 정의</h2>
+    <p>여러 작업을 <strong>하나의 묶음</strong>으로 처리하는 것. 전부 성공하거나, 전부 실패해야 한다. 중간에 실패하면 원래 상태로 되돌린다.</p>
+
+    <h2>왜 필요한가</h2>
+    <pre>// 은행 송금 예시
+A 계좌에서 10만원 차감
+B 계좌에 10만원 추가
+
+만약 차감은 됐는데 추가 도중 에러가 나면?
+→ 돈이 사라짐
+
+트랜잭션으로 묶으면:
+→ 둘 다 성공 또는 둘 다 취소 (차감도 원복)</pre>
+
+    <h2>ACID</h2>
+    <p>트랜잭션이 보장해야 하는 4가지 성질이다.</p>
+    <table>
+      <tr><th>속성</th><th>의미</th><th>예시</th></tr>
+      <tr><td><strong>A</strong>tomicity (원자성)</td><td>전부 성공 또는 전부 실패</td><td>송금 중 에러 → 전부 취소</td></tr>
+      <tr><td><strong>C</strong>onsistency (일관성)</td><td>데이터가 항상 유효한 상태</td><td>잔액이 음수가 되면 안 됨</td></tr>
+      <tr><td><strong>I</strong>solation (격리성)</td><td>동시 작업이 서로 영향 안 줌</td><td>두 사람이 동시에 같은 좌석 예매 불가</td></tr>
+      <tr><td><strong>D</strong>urability (지속성)</td><td>성공한 작업은 영구 보존</td><td>서버 꺼져도 데이터 유지</td></tr>
+    </table>
+
+    <h2>MongoDB vs RDB 트랜잭션</h2>
+    <pre>RDB (PostgreSQL 등):
+BEGIN;
+  UPDATE accounts SET balance = balance - 100000 WHERE id = 1;
+  UPDATE accounts SET balance = balance + 100000 WHERE id = 2;
+COMMIT;  -- 성공 시 확정
+-- 에러 나면 자동 ROLLBACK
+
+MongoDB:
+단일 문서 내 작업은 원자적으로 처리됨
+여러 문서 걸친 트랜잭션은 별도 설정 필요 (버전 4.0+)</pre>
+
+    <h2>내 블로그에서 트랜잭션이 필요한가</h2>
+    <p>현재는 필요 없다. 포스트 하나를 저장하거나 삭제하는 단순 작업이라 여러 컬렉션에 걸친 복잡한 트랜잭션이 없다.</p>
+    <p>나중에 Spring Boot + PostgreSQL로 방문자 통계를 관리하게 되면, 여러 테이블에 동시에 써야 하는 상황이 생겨서 트랜잭션이 중요해진다.</p>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+트랜잭션 = 여러 작업을 하나로 묶음 (전부 성공 or 전부 실패)
+ACID     = 트랜잭션이 보장해야 하는 4가지 성질
+RDB      = 트랜잭션 지원 강력
+MongoDB  = 단일 문서는 원자적, 다중 문서 트랜잭션은 제한적
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 5 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch5-1">
+    <div class="chapter-num">CHAPTER 5-1</div>
+    <div class="chapter-title">Kafka — 메시지 큐가 왜 필요한가</div>
+
+    <h2>메시지 큐 없이 직접 연결하면</h2>
+    <pre>Nginx → Logstash → Elasticsearch
+
+문제:
+① Elasticsearch가 다운되면? 로그 유실
+② 트래픽이 폭발하면? Logstash가 버티지 못함
+③ 나중에 다른 곳에도 로그를 보내고 싶으면?
+   → Nginx 설정을 다 바꿔야 함</pre>
+
+    <h2>Kafka를 중간에 넣으면</h2>
+    <pre>Nginx → Logstash → [Kafka] → Elasticsearch
+                              → 다른 시스템 (나중에 추가)
+
+이점:
+① Elasticsearch가 다운돼도 Kafka가 메시지 보관
+② 트래픽이 폭발해도 Kafka가 버퍼 역할
+③ 새 시스템 추가가 Kafka 구독만 하면 됨</pre>
+
+    <h2>실생활 비유</h2>
+    <pre>Kafka = 택배 허브 센터
+
+보내는 사람 (Producer): "이 짐 맡아줘"
+허브 센터 (Kafka):       보관하다가 순서대로 처리
+받는 사람 (Consumer):    "내 거 꺼내갈게"
+
+핵심: 보내는 사람과 받는 사람이 동시에 연결될 필요 없음
+      → 느슨한 연결 (Decoupling)</pre>
+
+    <h2>내 파이프라인에서</h2>
+    <pre>Producer: Logstash (nginx 로그를 Kafka에 전송)
+Topic:    nginx-logs (메시지가 저장되는 공간)
+Consumer: Logstash 두 번째 파이프라인 (Kafka에서 꺼내 Elasticsearch에 저장)</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+메시지 큐 = 생산자와 소비자를 느슨하게 연결하는 중간 버퍼
+
+이점:
+① 장애 격리 — 한쪽 다운돼도 메시지 보관
+② 부하 분산 — 트래픽 폭발 시 버퍼 역할
+③ 확장성   — 새 소비자 추가가 쉬움
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch5-2">
+    <div class="chapter-num">CHAPTER 5-2</div>
+    <div class="chapter-title">Topic, Offset, Consumer Group</div>
+
+    <h2>Topic — 메시지 분류함</h2>
+    <pre>Kafka 안에 여러 Topic이 있을 수 있음
+
+nginx-logs   ← nginx 접속 로그
+app-errors   ← 앱 에러 로그
+user-events  ← 사용자 행동 로그
+
+Producer는 특정 Topic에 메시지를 보내고
+Consumer는 특정 Topic을 구독해서 읽음</pre>
+
+    <h2>Offset — 메시지 위치 번호</h2>
+    <p>Kafka의 메시지는 Topic 안에 순서대로 쌓인다. 각 메시지는 <strong>Offset</strong>이라는 번호를 가진다.</p>
+    <pre>Topic: nginx-logs
+┌────────┬────────┬────────┬────────┬────────┐
+│offset 0│offset 1│offset 2│offset 3│offset 4│
+│ 로그A  │ 로그B  │ 로그C  │ 로그D  │ 로그E  │
+└────────┴────────┴────────┴────────┴────────┘
+
+Consumer가 offset 2까지 읽었다면
+→ 다음에 offset 3부터 이어서 읽음
+→ 서버가 재시작돼도 어디까지 읽었는지 기억</pre>
+    <p>이게 Kafka와 일반 메시지 큐의 가장 큰 차이다. 메시지를 읽어도 삭제되지 않아서, 나중에 다시 읽거나 다른 Consumer가 처음부터 읽을 수 있다.</p>
+
+    <h2>Consumer Group</h2>
+    <pre>같은 Group의 Consumer들은 메시지를 나눠서 처리
+다른 Group의 Consumer들은 같은 메시지를 각자 처리
+
+Group A (로그 저장팀): offset 0~4 전부 처리
+Group B (알림팀):     offset 0~4 전부 처리 (독립적으로)
+
+→ 같은 메시지를 여러 용도로 사용 가능</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+Topic          = 메시지 분류함 (채널)
+Offset         = 메시지 위치 번호 (어디까지 읽었는지 기억)
+Consumer Group = 독립적인 소비자 집합
+
+Kafka의 특징:
+읽어도 메시지 삭제 안 됨 → 여러 Consumer가 독립적으로 처리 가능
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch5-3">
+    <div class="chapter-num">CHAPTER 5-3</div>
+    <div class="chapter-title">지금 내 파이프라인 해석</div>
+
+    <h2>전체 흐름</h2>
+    <pre>① 사용자가 madayblog.com 접속
+② Nginx가 access.log에 기록
+   → /var/log/nginx/access.log (볼륨 공유)
+③ Logstash가 파일 감시 (input)
+   → 새 로그 발생 감지
+④ grok으로 파싱 (filter)
+   → 텍스트 → 구조화된 데이터
+⑤ Kafka nginx-logs 토픽에 전송 (output)
+⑥ Logstash 두 번째 파이프라인이 Kafka에서 소비
+⑦ Elasticsearch에 저장
+⑧ Kibana에서 시각화</pre>
+
+    <h2>grok 파싱</h2>
+    <p>로그 텍스트를 분해해서 의미있는 필드로 만드는 것이다.</p>
+    <pre># 원본 로그 텍스트
+123.456.789.0 - - [08/Apr/2026:12:00:00] "GET /api/posts HTTP/1.1" 200 1234
+
+# grok 적용 후
+{
+  "remote_addr":  "123.456.789.0",
+  "timestamp":    "08/Apr/2026:12:00:00",
+  "method":       "GET",
+  "path":         "/api/posts",
+  "status":       200,
+  "bytes":        1234
+}</pre>
+
+    <h2>왜 이렇게 복잡하게 구성했나</h2>
+    <table>
+      <tr><th>단계</th><th>이유</th></tr>
+      <tr><td>Kafka 추가</td><td>Elasticsearch 장애 시 로그 유실 방지, 버퍼 역할</td></tr>
+      <tr><td>Logstash grok</td><td>텍스트 로그를 검색 가능한 구조로 변환</td></tr>
+      <tr><td>Elasticsearch</td><td>대용량 로그 빠른 검색 (전문검색 엔진)</td></tr>
+      <tr><td>Kibana</td><td>로그 시각화, 대시보드</td></tr>
+    </table>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+Nginx → Logstash → Kafka → Logstash → Elasticsearch → Kibana
+
+각 역할:
+Nginx        = 로그 생성
+Logstash     = 수집 + 파싱 + 전송
+Kafka        = 버퍼 (장애 격리, 부하 분산)
+Elasticsearch = 저장 + 검색
+Kibana       = 시각화
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 6 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch6-1">
+    <div class="chapter-num">CHAPTER 6-1</div>
+    <div class="chapter-title">REST API 설계 원칙</div>
+
+    <h2>REST가 뭔가</h2>
+    <p>API를 설계하는 <strong>규칙의 집합</strong>이다. HTTP를 잘 활용해서 일관성 있게 API를 만드는 방법이다.</p>
+
+    <h2>핵심 원칙</h2>
+    <p><strong>1. URL은 자원(Resource)을 표현한다</strong></p>
+    <pre>좋음:  /api/posts          (포스트 목록)
+나쁨:  /api/getPosts       (동사 포함)
+나쁨:  /api/posts/getAll   (동사 포함)</pre>
+
+    <p><strong>2. 행위는 HTTP Method로 표현한다</strong></p>
+    <pre>GET    /api/posts          → 목록 조회
+GET    /api/posts/my-slug  → 단건 조회
+POST   /api/posts          → 생성
+PUT    /api/posts/my-slug  → 전체 수정
+PATCH  /api/posts/my-slug  → 일부 수정
+DELETE /api/posts/my-slug  → 삭제</pre>
+
+    <p><strong>3. 상태 코드를 올바르게 사용한다</strong></p>
+    <pre>200 OK          → 조회 성공
+201 Created     → 생성 성공
+400 Bad Request → 요청 데이터 오류
+401 Unauthorized → 인증 필요
+403 Forbidden   → 권한 없음
+404 Not Found   → 리소스 없음
+500 Server Error → 서버 오류</pre>
+
+    <h2>내 블로그 API 구조</h2>
+    <pre>GET    /api/posts          → 포스트 목록 (페이지네이션, 검색)
+POST   /api/posts          → 포스트 생성 (관리자 전용)
+DELETE /api/posts          → 포스트 삭제 (관리자 전용)
+GET    /api/posts/[slug]   → 포스트 단건 조회
+GET    /api/system/server  → 서버 상태
+GET    /api/system/docker  → Docker 컨테이너 목록 (SSE)</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+REST = HTTP를 잘 활용한 API 설계 규칙
+
+URL      = 자원 표현 (명사)
+Method   = 행위 표현 (GET/POST/PUT/DELETE)
+상태코드 = 결과 표현 (200/201/400/401/404/500)
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch6-2">
+    <div class="chapter-num">CHAPTER 6-2</div>
+    <div class="chapter-title">인증 — JWT vs Session</div>
+
+    <h2>Session 방식 (전통적)</h2>
+    <pre>① 사용자 로그인
+② 서버가 세션 생성 → 메모리/DB에 저장
+③ 세션 ID를 쿠키로 전달
+④ 이후 요청마다 쿠키의 세션 ID 확인
+⑤ 서버가 세션 저장소에서 조회 → 인증 확인
+
+문제: 서버가 여러 대면 세션 공유가 필요 (Redis 등)
+     서버에 상태가 생김 (Stateful)</pre>
+
+    <h2>JWT 방식 (현대적)</h2>
+    <pre>① 사용자 로그인
+② 서버가 JWT 토큰 생성 → 클라이언트에 전달
+③ 이후 요청마다 토큰을 헤더에 포함
+   Authorization: Bearer eyJhbGci...
+④ 서버가 토큰 서명 검증 → 인증 확인
+   (DB 조회 없이 서명만으로 확인 가능)
+
+장점: 서버에 상태 없음 (Stateless)
+      서버 여러 대여도 문제없음</pre>
+
+    <h2>JWT 구조</h2>
+    <pre>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0In0.abc123
+
+헤더.페이로드.서명
+ │       │       └── 위변조 방지 서명
+ │       └────────── 실제 데이터 (userId, role 등)
+ └────────────────── 알고리즘 정보</pre>
+
+    <h2>내 블로그 인증 구조</h2>
+    <pre>GitHub OAuth → NextAuth.js → JWT
+
+① GitHub 로그인 버튼 클릭
+② GitHub 인증 페이지로 이동
+③ 인증 완료 → NextAuth가 JWT 생성
+④ JWT에 GitHub userId 포함
+⑤ API 요청 시 userId를 환경변수의 ADMIN_ID와 비교
+   → 같으면 관리자 권한 부여</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+Session = 서버에 상태 저장 (Stateful)
+          서버 여러 대면 공유 필요 (Redis)
+
+JWT     = 서버에 상태 없음 (Stateless)
+          토큰 서명으로 검증, DB 조회 불필요
+          Authorization: Bearer {token} 형식
+
+내 블로그: GitHub OAuth + NextAuth + JWT
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch6-3">
+    <div class="chapter-num">CHAPTER 6-3</div>
+    <div class="chapter-title">Spring Boot로 API 만들기</div>
+
+    <h2>Next.js API와 비교</h2>
+    <table>
+      <tr><th>역할</th><th>Next.js</th><th>Spring Boot</th></tr>
+      <tr><td>라우팅</td><td>app/api/posts/route.ts</td><td>@RestController + @GetMapping</td></tr>
+      <tr><td>요청 처리</td><td>export async function GET()</td><td>public ResponseEntity getStats()</td></tr>
+      <tr><td>DB 연결</td><td>Mongoose</td><td>JPA / JDBC</td></tr>
+      <tr><td>응답</td><td>NextResponse.json(data)</td><td>ResponseEntity.ok(data)</td></tr>
+    </table>
+
+    <h2>프로젝트 구조</h2>
+    <pre>spring-stats/
+├── src/main/java/com/mablog/stats/
+│   ├── StatsApplication.java      ← 진입점 (main)
+│   ├── controller/
+│   │   └── StatsController.java   ← API 엔드포인트
+│   ├── service/
+│   │   └── StatsService.java      ← 비즈니스 로직
+│   └── repository/
+│       └── StatsRepository.java   ← DB 쿼리
+├── src/main/resources/
+│   └── application.yml            ← 설정 (DB 주소 등)
+└── build.gradle                   ← 의존성</pre>
+
+    <h2>Controller 예시</h2>
+    <pre>@RestController
+@RequestMapping("/api/stats")
+public class StatsController {
+
+    @Autowired
+    private StatsService statsService;
+
+    // GET /api/stats/today
+    @GetMapping("/today")
+    public ResponseEntity&lt;?&gt; getToday() {
+        return ResponseEntity.ok(statsService.getTodayVisitors());
+    }
+
+    // GET /api/stats/weekly
+    @GetMapping("/weekly")
+    public ResponseEntity&lt;?&gt; getWeekly() {
+        return ResponseEntity.ok(statsService.getWeeklyStats());
+    }
+}</pre>
+
+    <h2>앞으로 만들 구조</h2>
+    <pre>Nginx 로그
+    │
+    ▼
+Kafka (nginx-logs topic)
+    │
+    ▼
+Python Consumer ← 새로 추가
+  로그 파싱·정제
+    │
+    ▼
+PostgreSQL ← 새로 추가
+  방문자 데이터 저장
+    │
+    ▼
+Spring Boot API ← 새로 추가
+  /api/stats/today
+  /api/stats/weekly
+  /api/stats/popular-posts
+    │
+    ▼
+블로그 대시보드 위젯</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+Spring Boot = Java 기반 백엔드 프레임워크
+@RestController = API 엔드포인트 클래스
+@GetMapping     = GET 요청 처리 메서드
+ResponseEntity  = HTTP 응답 객체
+
+Next.js API와 개념은 같고 문법만 다르다.
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 7. 크롤링 & AI -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch7-1">
+    <div class="chapter-num">CHAPTER 7-1</div>
+    <div class="chapter-title">웹 크롤링 — 자동으로 웹페이지 내용 가져오기</div>
+
+    <h2>크롤링이 뭔가</h2>
+    <p>사람이 브라우저에서 사이트를 열고 내용을 읽는 것을 <strong>코드로 자동화</strong>한 것이다.</p>
+    <pre>사람:  브라우저 열기 → URL 입력 → 페이지 로드 → 내용 읽기
+크롤링: fetch(URL) → HTML 받기 → 파싱 → 원하는 데이터 추출</pre>
+
+    <h2>크롤링 과정</h2>
+    <pre>① fetch로 HTML 받기
+   const res = await fetch('https://example.com/search?q=명조')
+   const html = await res.text()
+
+② HTML 파싱 (cheerio)
+   const $ = cheerio.load(html)
+
+③ CSS 선택자로 원하는 요소 추출
+   $('a.tit_txt').each((_, el) => {
+       const title = $(el).text()
+       const url   = $(el).attr('href')
+   })</pre>
+
+    <h2>cheerio — 서버에서 쓰는 jQuery</h2>
+    <p>HTML에서 원하는 요소를 추출하는 Node.js 라이브러리다. 브라우저의 <strong>jQuery와 문법이 동일</strong>해서 CSS 선택자로 요소를 찾을 수 있다.</p>
+    <pre>// jQuery (브라우저)
+$('a.title').text()
+
+// cheerio (서버, Node.js)
+const $ = cheerio.load(html)  ← HTML을 먼저 로드
+$('a.title').text()            ← 이후 문법 동일</pre>
+
+    <table>
+      <tr><th>선택자</th><th>의미</th><th>예시</th></tr>
+      <tr><td>a</td><td>모든 a 태그</td><td>$('a')</td></tr>
+      <tr><td>.클래스명</td><td>해당 클래스</td><td>$('.tit_txt')</td></tr>
+      <tr><td>#아이디</td><td>해당 ID</td><td>$('#content')</td></tr>
+      <tr><td>부모 자식</td><td>부모 안의 자식</td><td>$('.list a')</td></tr>
+      <tr><td>[속성=값]</td><td>속성 필터</td><td>$('a[target="_blank"]')</td></tr>
+    </table>
+
+    <h2>크롤링의 한계</h2>
+    <table>
+      <tr><th>상황</th><th>문제</th><th>대안</th></tr>
+      <tr><td>JS 렌더링 사이트</td><td>fetch로 빈 HTML만 받힘</td><td>Puppeteer (헤드리스 브라우저)</td></tr>
+      <tr><td>Cloudflare 차단</td><td>챌린지 페이지 반환 (아카라이브)</td><td>공식 API 사용</td></tr>
+      <tr><td>봇 차단</td><td>403 에러</td><td>User-Agent 헤더 설정</td></tr>
+      <tr><td>선택자 변경</td><td>사이트 업데이트 시 크롤링 깨짐</td><td>공식 API 사용</td></tr>
+    </table>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+크롤링 = fetch로 HTML 받고 → cheerio로 파싱 → 원하는 데이터 추출
+cheerio = 서버용 jQuery (CSS 선택자로 HTML 파싱)
+
+한계:
+- JS 렌더링 사이트는 fetch로 내용 못 받음
+- Cloudflare 같은 봇 차단에 막힘
+- 사이트 구조 바뀌면 선택자 다시 찾아야 함
+→ 가능하면 공식 API 쓰는 게 안정적
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch7-2">
+    <div class="chapter-num">CHAPTER 7-2</div>
+    <div class="chapter-title">Ollama — 로컬 AI 모델 실행</div>
+
+    <h2>Ollama가 뭔가</h2>
+    <p>오픈소스 AI 언어 모델을 <strong>내 서버에서 직접 실행</strong>하는 도구다. ChatGPT 같은 것을 외부 API 없이 로컬에서 돌린다고 보면 된다.</p>
+    <pre>ChatGPT 방식:
+  내 앱 → OpenAI 서버 → 응답  (외부 API, 비용 발생)
+
+Ollama 방식:
+  내 앱 → 내 서버 Ollama → 응답  (로컬, 비용 0원)</pre>
+
+    <h2>구조</h2>
+    <pre>Docker 컨테이너 (mablog_ollama)
+└── Ollama 서버 (11434 포트)
+    └── EXAONE 4.0 1.2B 모델 로드
+            │
+            ↓ HTTP API
+Next.js /api/search-summary
+    POST http://mablog_ollama:11434/api/generate
+    {
+        "model": "ingu627/exaone4.0:1.2b",
+        "prompt": "...",
+        "stream": false
+    }</pre>
+
+    <h2>Ollama API 사용법</h2>
+    <pre>// 요청
+fetch('http://mablog_ollama:11434/api/generate', {
+    method: 'POST',
+    body: JSON.stringify({
+        model: 'ingu627/exaone4.0:1.2b',
+        prompt: '한국어로 요약해줘: ...',
+        stream: false,               // true면 스트리밍
+        options: {
+            temperature: 0.3,        // 낮을수록 일관된 답변
+            num_predict: 400,        // 최대 토큰 수
+        }
+    })
+})
+
+// 응답
+{ "response": "요약 내용..." }</pre>
+
+    <h2>모델 크기와 성능</h2>
+    <table>
+      <tr><th>모델</th><th>크기</th><th>RAM</th><th>속도 (CPU)</th><th>품질</th></tr>
+      <tr><td>EXAONE 4.0 1.2B</td><td>812MB</td><td>~2GB</td><td>10~20초</td><td>한국어 특화</td></tr>
+      <tr><td>llama3.2:3b</td><td>2GB</td><td>~4GB</td><td>20~40초</td><td>영어 강점</td></tr>
+      <tr><td>llama3.1:8b</td><td>4.7GB</td><td>~8GB</td><td>60초+</td><td>높음</td></tr>
+    </table>
+    <p>GPU가 없으면 CPU로 추론한다. 속도가 느린 이유다. GPU가 있으면 10배 이상 빨라진다.</p>
+
+    <h2>temperature란</h2>
+    <pre>temperature = 0.0  → 항상 같은 답변 (일관성 최대)
+temperature = 0.3  → 약간의 다양성 (요약에 적합)
+temperature = 1.0  → 창의적, 다양한 답변 (창작에 적합)
+temperature = 2.0  → 예측 불가, 랜덤</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+Ollama = 로컬에서 AI 모델 실행하는 도구 (비용 0원)
+EXAONE = LG AI 연구소의 한국어 특화 오픈소스 모델
+
+POST /api/generate → { model, prompt, stream, options }
+temperature = 응답의 창의성/일관성 조절 (낮을수록 일관적)
+
+장점: 외부 API 비용 없음, 데이터 외부 전송 없음
+단점: CPU 추론이라 느림, GPU 있으면 해결
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch7-3">
+    <div class="chapter-num">CHAPTER 7-3</div>
+    <div class="chapter-title">검색 요약 위젯 전체 구조 해석</div>
+
+    <h2>전체 흐름</h2>
+    <pre>① 사용자가 검색어 입력 + 사이트 선택
+② [검색] 버튼 클릭
+③ POST /api/search-summary 호출
+④ 서버에서 선택된 사이트 병렬 크롤링
+   ├── 인벤: search/webzine/article/?query=...
+   └── 디시: search.dcinside.com/post/q/...
+⑤ 각 검색 결과 URL에서 본문 텍스트 추출 (병렬)
+⑥ 수집된 텍스트를 EXAONE 프롬프트에 포함
+⑦ Ollama API 호출 → 요약 생성
+⑧ thinking 태그 제거 후 응답
+⑨ 위젯에 요약 + 출처 목록 표시</pre>
+
+    <h2>병렬 처리 — Promise.all</h2>
+    <pre>// 순차 처리 (느림)
+const result1 = await crawlInven(query)   // 2초
+const result2 = await crawlDcinside(query) // 2초
+// 총 4초
+
+// 병렬 처리 (빠름)
+const [result1, result2] = await Promise.all([
+    crawlInven(query),
+    crawlDcinside(query),
+])
+// 총 2초 (동시에 실행)</pre>
+
+    <h2>EXAONE thinking 태그 문제</h2>
+    <p>EXAONE 4.0은 추론(reasoning) 모델이라 답변 전에 사고 과정을 출력한다.</p>
+    <pre>// EXAONE 원본 응답
+&lt;think&gt;
+이 질문은 명조 게임에 관한 것이다...
+커뮤니티 반응을 분석해보면...
+&lt;/think&gt;
+명조는 현재 인기 상승세를 보이고 있으며...
+
+// stripThinkingTags() 적용 후
+명조는 현재 인기 상승세를 보이고 있으며...</pre>
+
+    <h2>AbortSignal.timeout — 요청 시간 제한</h2>
+    <pre>fetch(url, {
+    signal: AbortSignal.timeout(5000)  // 5초 안에 응답 없으면 취소
+})
+
+// 이유: 본문 크롤링 시 느린 사이트가 하나라도 있으면
+//        전체가 기다려야 함 → timeout으로 빠르게 포기</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+Promise.all    = 여러 비동기 작업을 동시에 실행 (병렬)
+AbortSignal    = fetch 요청에 타임아웃 설정
+stripThinking  = EXAONE의 &lt;think&gt; 태그 제거
+
+전체 구조:
+사용자 입력 → 크롤링(병렬) → 본문 추출(병렬) → EXAONE 요약 → 표시
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 8. 로그 & 모니터링 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch8-1">
+    <div class="chapter-num">CHAPTER 8-1</div>
+    <div class="chapter-title">서버 로그를 보는 방법</div>
+
+    <h2>로그가 왜 중요한가</h2>
+    <p>에러가 났을 때 화면엔 "요청 실패"만 뜨고 실제 원인은 서버 내부에 있다. 로그를 봐야 진짜 원인을 알 수 있다.</p>
+    <pre>화면: "요청 실패. 잠시 후 다시 시도해주세요."
+          ↓ 로그 확인
+실제: TypeError: Cannot read properties of undefined
+      at crawlDcinside (/app/api/search-summary/route.ts:65)</pre>
+
+    <h2>Docker 로그 보는 법</h2>
+    <pre># 기본
+docker logs mablog_nextjs
+
+# 마지막 50줄만
+docker logs mablog_nextjs --tail 50
+
+# 실시간 스트리밍 (새 로그 계속 출력)
+docker logs mablog_nextjs -f
+
+# 에러만 필터
+docker logs mablog_nextjs 2>&1 | grep -i error
+
+# 노이즈 제거 + 필터
+docker logs mablog_nextjs 2>&1 | grep -v "prerender\|cache" | tail 30</pre>
+
+    <h2>Next.js 로그 구조</h2>
+    <pre>stdout (표준 출력) → 정상 로그
+stderr (표준 에러) → 에러 로그
+
+docker logs 명령어는 둘 다 섞어서 보여줌
+2>&1 → stderr를 stdout으로 합쳐서 파이프 처리 가능</pre>
+
+    <h2>내 블로그 APP_LOG 위젯</h2>
+    <p>대시보드에서 직접 Next.js 로그를 볼 수 있도록 만든 위젯이다.</p>
+    <pre>GET /api/system/applog?lines=80&filter=error
+    │
+    ▼
+execSync('docker logs mablog_nextjs --tail 80 2>&1 | grep ...')
+    │
+    ▼
+로그 라인별 파싱 → level 판단 (error/warn/success/info)
+    │
+    ▼
+위젯에서 5초마다 자동 갱신</pre>
+
+    <table>
+      <tr><th>버튼</th><th>기능</th></tr>
+      <tr><td>[ERR]</td><td>에러 로그만 필터링</td></tr>
+      <tr><td>[AUTO]</td><td>자동 스크롤 on/off</td></tr>
+      <tr><td>[↺]</td><td>수동 새로고침</td></tr>
+      <tr><td>filter 입력</td><td>키워드로 로그 검색 (예: search-summary)</td></tr>
+    </table>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+docker logs [컨테이너명]  = 로그 조회
+--tail N                  = 마지막 N줄만
+-f                        = 실시간 스트리밍
+2>&1                      = stderr를 stdout으로 합침
+grep -v                   = 특정 패턴 제외 (노이즈 제거)
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch8-2">
+    <div class="chapter-num">CHAPTER 8-2</div>
+    <div class="chapter-title">execSync — 서버에서 shell 명령어 실행</div>
+
+    <h2>execSync가 뭔가</h2>
+    <p>Node.js에서 shell 명령어를 직접 실행할 수 있는 함수다. Next.js API 라우트에서 서버의 명령어를 실행할 때 쓴다.</p>
+    <pre>import { execSync } from 'child_process'
+
+// shell 명령어를 실행하고 결과를 문자열로 반환
+const output = execSync('docker logs mablog_nextjs --tail 50 2>&1').toString()</pre>
+
+    <h2>sync vs async</h2>
+    <pre>execSync  → 동기 (명령 끝날 때까지 기다림)
+exec      → 비동기 (콜백 방식)
+execFile  → 파일 직접 실행 (더 안전)
+
+로그 조회처럼 빠른 작업은 execSync로 충분
+오래 걸리는 작업은 비동기 방식 권장</pre>
+
+    <h2>보안 주의사항</h2>
+    <pre>// 위험: 사용자 입력을 그대로 명령어에 삽입
+execSync(`docker logs ${req.query.name}`)
+// → name에 "x; rm -rf /" 넣으면 서버 전체 삭제
+
+// 안전: 입력값 검증 후 사용
+const filter = searchParams.get('filter').replace(/[^a-zA-Z0-9가-힣\s-]/g, '')
+execSync(`docker logs mablog_nextjs 2>&1 | grep "${filter}"`)
+
+이걸 Command Injection 취약점이라고 한다.
+외부에서 받은 값을 shell 명령에 쓸 때는 반드시 검증해야 한다.</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+execSync = Node.js에서 shell 명령어 동기 실행
+child_process 모듈에 포함
+
+보안 원칙:
+사용자 입력을 shell 명령에 직접 삽입 금지
+→ Command Injection 취약점
+→ 입력값 정규식으로 특수문자 제거 후 사용
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch8-3">
+    <div class="chapter-num">CHAPTER 8-3</div>
+    <div class="chapter-title">네이버 검색 API 사용하기</div>
+
+    <h2>네이버 검색 API란</h2>
+    <p>네이버 공식에서 제공하는 검색 API다. 블로그, 카페, 뉴스, 지식iN 등을 키워드로 검색할 수 있다. <strong>개인 개발자도 무료로 사용 가능</strong>하다. (회사 전용 아님)</p>
+
+    <h2>발급 방법</h2>
+    <pre>1. developers.naver.com 접속
+2. 네이버 계정으로 로그인
+3. [Application] → [애플리케이션 등록]
+4. 사용 API에서 [검색] 체크
+5. Client ID / Client Secret 즉시 발급</pre>
+
+    <h2>무료 한도</h2>
+    <table>
+      <tr><th>API</th><th>하루 한도</th></tr>
+      <tr><td>블로그 검색</td><td>25,000건</td></tr>
+      <tr><td>카페글 검색</td><td>25,000건</td></tr>
+      <tr><td>뉴스 검색</td><td>25,000건</td></tr>
+      <tr><td>지식iN 검색</td><td>25,000건</td></tr>
+    </table>
+
+    <h2>API 호출 방법</h2>
+    <pre>// 요청 헤더에 인증 정보 포함
+fetch('https://openapi.naver.com/v1/search/cafearticle.json?query=명조&display=5', {
+    headers: {
+        'X-Naver-Client-Id':     process.env.NAVER_CLIENT_ID,
+        'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET,
+    }
+})
+
+// 응답 구조
+{
+    "total": 12345,
+    "items": [
+        {
+            "title":       "명조 공략 정리",
+            "link":        "https://cafe.naver.com/...",
+            "description": "명조 워더링웨이브 공략..."
+        }
+    ]
+}</pre>
+
+    <h2>크롤링과 비교</h2>
+    <table>
+      <tr><th></th><th>크롤링</th><th>공식 API</th></tr>
+      <tr><td>안정성</td><td>사이트 구조 바뀌면 깨짐</td><td>공식 스펙 보장</td></tr>
+      <tr><td>속도</td><td>페이지 로드 시간</td><td>빠름</td></tr>
+      <tr><td>차단</td><td>봇 차단 위험</td><td>없음</td></tr>
+      <tr><td>비용</td><td>무료</td><td>무료 (한도 내)</td></tr>
+      <tr><td>데이터</td><td>원하는 대로</td><td>API가 제공하는 것만</td></tr>
+    </table>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+네이버 검색 API = 개인 개발자도 무료, 하루 25,000건
+발급: developers.naver.com → 애플리케이션 등록 → 검색 API 선택
+
+인증: 헤더에 X-Naver-Client-Id, X-Naver-Client-Secret 포함
+환경변수: .env에 저장 (코드에 직접 넣으면 보안 위험)
+
+공식 API > 크롤링 (안정성, 속도, 차단 위험 없음)
+    </div>
+  </div>
+
+  <!-- 마무리 -->
+  <div style="text-align:center; padding: 60px 0; color: #333; font-size: 0.85em; letter-spacing: 2px;">
+    // END OF DOCUMENT — Ma_Dev 2026.04
+  </div>
+
+</div>
+</body>
+</html>

@@ -166,6 +166,21 @@ services:
         networks:
             - mablog_network
 
+    # --------------------------
+    # Ollama (로컬 AI 모델 서버)
+    # 접근: http://mablog_ollama:11434 (내부), http://localhost:11434 (로컬)
+    # --------------------------
+    mablog_ollama:
+        image: ollama/ollama:latest
+        container_name: mablog_ollama
+        restart: always
+        ports:
+            - "127.0.0.1:11434:11434"   # 로컬호스트만 (외부 직접 접근 차단)
+        volumes:
+            - ./ollama_data:/root/.ollama   # 모델 파일 영속성
+        networks:
+            - mablog_network
+
 networks:
     mablog_network:
         driver: bridge

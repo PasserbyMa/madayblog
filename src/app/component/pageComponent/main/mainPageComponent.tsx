@@ -24,6 +24,8 @@ import GithubActivity from '../../common/githubActivity';
 import CategoryFilter from '../../common/categoryFilter';
 import RaspberryStatus from '../../common/raspberryStatus';
 import NginxLogWidget from '../../common/nginxLogWidget';
+import SearchSummaryWidget from '../../common/searchSummaryWidget';
+import AppLogWidget from '../../common/appLogWidget';
 
 //===
 type ModalType = 'more' | 'recentDetail' | 'add' | 'fix';
@@ -204,6 +206,19 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                     <h2 className="moduleTitle">[NGINX_LOG]</h2>
                     <NginxLogWidget />
                 </div>
+                {/* ======================= */}
+                {/* SEARCH_SUMMARY + APP_LOG (50/50) */}
+                {/* ======================= */}
+                <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '15px' }}>
+                    <div className="gridItem" style={{ flex: 1, minHeight: 300 }}>
+                        <h2 className="moduleTitle">[SEARCH_SUMMARY // EXAONE 4.0]</h2>
+                        <SearchSummaryWidget />
+                    </div>
+                    <div className="gridItem" style={{ flex: 1, minHeight: 300 }}>
+                        <h2 className="moduleTitle">[APP_LOG // Next.js]</h2>
+                        <AppLogWidget />
+                    </div>
+                </div>
             </div>
             {/* ======================= */}
             {/* More -> ADD 버튼 눌렀을 때 */}
@@ -227,7 +242,10 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                                 ]}
                                 key={'ADD'}
                                 setIsOpen={(v) => { if (!v) closeModal(); }}
-                                setPData={setP_Data}
+                                setPData={(posts) => {
+                                    setP_Data(posts);
+                                    setRecentPosts(posts.slice(0, 5));
+                                }}
                             />
                         </>
                     }
