@@ -167,6 +167,29 @@ services:
             - mablog_network
 
     # --------------------------
+    # Kafka Visitor Stats Consumer
+    # nginx-logs 토픽 → MongoDB visitor_stats 저장
+    # --------------------------
+    mablog_visitor_consumer:
+        build:
+            context: ./kafka_consumer
+            dockerfile: Dockerfile
+        container_name: mablog_visitor_consumer
+        restart: always
+        environment:
+            - KAFKA_BOOTSTRAP=mablog_kafka:9092
+            - KAFKA_TOPIC=nginx-logs
+            - KAFKA_GROUP_ID=visitor-stats-consumer
+            - MONGO_URI=mongodb://mongoAdmin:mongoA96547852!@db:27017/maBlog_DataTable?authSource=admin
+            - MONGO_DB=maBlog_DataTable
+            - MONGO_COLLECTION=visitor_stats
+        depends_on:
+            - db
+            - mablog_kafka
+        networks:
+            - mablog_network
+
+    # --------------------------
     # Ollama (로컬 AI 모델 서버)
     # 접근: http://mablog_ollama:11434 (내부), http://localhost:11434 (로컬)
     # --------------------------

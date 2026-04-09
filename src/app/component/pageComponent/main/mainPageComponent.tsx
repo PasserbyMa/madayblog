@@ -26,6 +26,7 @@ import RaspberryStatus from '../../common/raspberryStatus';
 import NginxLogWidget from '../../common/nginxLogWidget';
 import SearchSummaryWidget from '../../common/searchSummaryWidget';
 import AppLogWidget from '../../common/appLogWidget';
+import VisitorStatsWidget from '../../common/visitorStatsWidget';
 
 //===
 type ModalType = 'more' | 'recentDetail' | 'add' | 'fix';
@@ -211,6 +212,12 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                     <div className="gridItem gridItemNginx">
                         <h2 className="moduleTitle">[NGINX_LOG]</h2>
                         <NginxLogWidget />
+                    </div>
+                )}
+                {show('server') && (
+                    <div className="gridItem gridItemNginx">
+                        <h2 className="moduleTitle">[VISITOR_STATS]</h2>
+                        <VisitorStatsWidget />
                     </div>
                 )}
                 {isMobile && show('server') && (

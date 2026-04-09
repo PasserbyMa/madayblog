@@ -278,6 +278,12 @@
     <a class="toc-sub" href="#ch9-1">9-1. 비동기 심화 — Promise.all과 AbortSignal</a>
     <a class="toc-sub" href="#ch9-2">9-2. 환경변수와 보안 — .env, 커맨드 인젝션</a>
     <a class="toc-sub" href="#ch9-3">9-3. 위젯 아키텍처 패턴 — API Route + React Hooks</a>
+
+    <div class="toc-chapter">CHAPTER 10. 실전 데이터 파이프라인</div>
+    <a class="toc-sub" href="#ch10-1">10-1. 전체 파이프라인 설계 — Nginx → Kafka → MongoDB → 대시보드</a>
+    <a class="toc-sub" href="#ch10-2">10-2. Python Kafka Consumer — 봇 필터링과 MongoDB 저장</a>
+    <a class="toc-sub" href="#ch10-3">10-3. MongoDB 집계 쿼리 — aggregate 파이프라인</a>
+    <a class="toc-sub" href="#ch10-4">10-4. TTL 인덱스 — 데이터 자동 만료</a>
   </div>
 
   <!-- ======================== -->
@@ -2252,6 +2258,327 @@ API Route를 쓰는 이유:
 2. API 키가 서버에만 있어서 안전
 
 setInterval + clearInterval 세트로 쓸 것 → 정리 안 하면 메모리 누수
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 10 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch10-1">
+    <div class="chapter-num">CHAPTER 10-1</div>
+    <div class="chapter-title">전체 파이프라인 설계 — Nginx → Kafka → MongoDB → 대시보드</div>
+
+    <h2>왜 이 구조인가</h2>
+    <p>방문자 통계를 만들고 싶을 때 가장 단순한 방법은 Nginx 로그 파일을 직접 파싱하는 것이다. 하지만 그 방식에는 문제가 있다.</p>
+    <table>
+      <tr><th>방법</th><th>문제점</th></tr>
+      <tr><td>파일 직접 파싱</td><td>매 요청마다 파일 I/O, 파일 로테이션 시 데이터 유실 위험</td></tr>
+      <tr><td>DB에 직접 저장</td><td>Nginx가 DB를 알아야 함 — 결합도가 높아짐</td></tr>
+      <tr><td>Kafka 중간층</td><td>Nginx는 로그만 쓰고, 소비는 누구든 독립적으로 가능</td></tr>
+    </table>
+    <p>Kafka를 중간에 두면 <strong>생산자(Nginx/Logstash)와 소비자(Python consumer)가 완전히 분리</strong>된다. 나중에 소비자를 Elasticsearch에 저장하는 것으로 바꿔도 Nginx 설정은 건드릴 필요가 없다.</p>
+
+    <h2>전체 흐름</h2>
+    <pre>Nginx (로그 파일 생성)
+   │
+   ▼
+Logstash (grok으로 파싱 → JSON 변환)
+   │
+   ▼
+Kafka topic: nginx-logs  ← 여기서 데이터가 대기
+   │
+   ├──▶ Python Consumer → MongoDB visitor_stats (방문자 통계)
+   └──▶ Elasticsearch  → Kibana (로그 검색/시각화)
+
+MongoDB visitor_stats
+   │
+   ▼
+Next.js API Route /api/system/visitor (집계)
+   │
+   ▼
+React 위젯 [VISITOR_STATS] (30초마다 갱신)</pre>
+
+    <h2>각 컴포넌트의 역할</h2>
+    <table>
+      <tr><th>컴포넌트</th><th>역할</th><th>기술</th></tr>
+      <tr><td>Logstash</td><td>Nginx 로그 파싱 + Kafka 전송</td><td>grok filter, kafka output</td></tr>
+      <tr><td>Kafka</td><td>메시지 버퍼 — 생산/소비 분리</td><td>KRaft 모드, topic: nginx-logs</td></tr>
+      <tr><td>Python consumer</td><td>Kafka 구독 → 봇 필터 → MongoDB 저장</td><td>kafka-python-ng, pymongo</td></tr>
+      <tr><td>MongoDB</td><td>집계 가능한 구조화 저장</td><td>TTL 인덱스로 30일 자동 삭제</td></tr>
+      <tr><td>API Route</td><td>MongoDB 집계 결과를 JSON으로 반환</td><td>Next.js, mongoose</td></tr>
+      <tr><td>React 위젯</td><td>30초마다 API 호출, 화면 렌더링</td><td>useState, useEffect, setInterval</td></tr>
+    </table>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+파이프라인 설계의 핵심 = 각 컴포넌트의 관심사를 분리하는 것
+Nginx는 로그만 쓴다 / Logstash는 파싱만 한다 / Kafka는 전달만 한다
+소비자가 여러 개여도 Kafka topic만 구독하면 됨 → 확장에 열려 있는 구조
+    </div>
+  </div>
+
+  <div class="chapter" id="ch10-2">
+    <div class="chapter-num">CHAPTER 10-2</div>
+    <div class="chapter-title">Python Kafka Consumer — 봇 필터링과 MongoDB 저장</div>
+
+    <h2>라이브러리 선택 — kafka-python vs kafka-python-ng</h2>
+    <p><code>kafka-python 2.0.2</code>는 Python 3.12에서 내부 의존성 문제로 실행이 안 된다.</p>
+    <pre># 오류 메시지
+ModuleNotFoundError: No module named 'kafka.vendor.six.moves'
+
+# 해결: 유지보수 중인 포크 사용
+kafka-python-ng==2.2.3</pre>
+    <p><strong>kafka-python-ng</strong>는 kafka-python의 포크로, API가 완전히 동일하고 Python 3.12 호환성 문제를 수정한 버전이다.</p>
+
+    <h2>Consumer 기본 구조</h2>
+    <pre>from kafka import KafkaConsumer
+import json
+
+consumer = KafkaConsumer(
+    'nginx-logs',                          # 구독할 topic
+    bootstrap_servers='mablog_kafka:9092',
+    group_id='visitor-stats-consumer',     # consumer group ID
+    auto_offset_reset='earliest',          # 처음부터 읽기
+    enable_auto_commit=True,               # offset 자동 저장
+    value_deserializer=lambda v: json.loads(v.decode('utf-8')),
+)
+
+for message in consumer:
+    record = message.value  # 이미 dict로 변환됨
+    print(record)</pre>
+
+    <p><code>auto_offset_reset='earliest'</code>는 이 consumer group이 처음 실행될 때 topic의 가장 처음 메시지부터 읽는다는 뜻이다. 이미 읽었던 메시지는 <code>group_id</code>가 기억해서 재시작해도 중복 처리하지 않는다.</p>
+
+    <h2>봇 트래픽 필터링</h2>
+    <p>실서버에는 엄청난 양의 봇/공격 트래픽이 들어온다. 통계에서 이를 제거해야 의미 있는 방문자 수를 얻을 수 있다.</p>
+    <pre>import re
+
+BOT_PATH_PATTERNS = re.compile(
+    r"(/cgi-bin|/admin|/wp-|/\.env|/shell|/bin/sh|/etc/passwd"
+    r"|/config\.php|/xmlrpc\.php)",
+    re.IGNORECASE,
+)
+BOT_UA_PATTERNS = re.compile(
+    r"(zgrab|masscan|sqlmap|nikto|nmap|dirbuster|scanner)",
+    re.IGNORECASE,
+)
+
+def is_bot(record: dict) -> bool:
+    path   = record.get('path', '')
+    ua     = record.get('user_agent', '') or ''
+    status = record.get('status', 200)
+    method = record.get('method', 'GET')
+
+    if status == 400:                         # Bad Request = 거의 봇
+        return True
+    if BOT_PATH_PATTERNS.search(path):        # 공격성 경로
+        return True
+    if BOT_UA_PATTERNS.search(ua):            # 봇 UA
+        return True
+    if method not in ('GET','POST','PUT','DELETE','PATCH','HEAD','OPTIONS'):
+        return True
+    return False</pre>
+
+    <h2>연결 재시도 패턴</h2>
+    <p>컨테이너 시작 순서 문제로 Kafka나 MongoDB가 아직 준비 안 됐을 수 있다. <code>while True + sleep</code>으로 재시도한다.</p>
+    <pre>def connect_mongo():
+    while True:
+        try:
+            client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+            client.admin.command('ping')
+            print('[MongoDB] Connected')
+            return client
+        except ConnectionFailure:
+            print('[MongoDB] 연결 실패 — 5초 후 재시도')
+            time.sleep(5)</pre>
+
+    <h2>Docker 서비스로 실행</h2>
+    <pre># kafka_consumer/Dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY consumer.py .
+CMD ["python", "-u", "consumer.py"]  # -u: 출력 버퍼링 없애기</pre>
+    <pre># docker-compose.yml
+mablog_visitor_consumer:
+    build:
+        context: ./kafka_consumer
+        dockerfile: Dockerfile
+    environment:
+        - KAFKA_BOOTSTRAP=mablog_kafka:9092
+        - MONGO_URI=mongodb://user:pw@db:27017/dbname?authSource=admin
+    depends_on:
+        - db
+        - mablog_kafka
+    networks:
+        - mablog_network</pre>
+
+    <p><code>depends_on</code>은 컨테이너 <strong>시작 순서</strong>만 보장한다. DB나 Kafka가 실제로 준비됐는지는 보장하지 않는다. 그래서 consumer 코드 안에 직접 재시도 로직을 구현하는 게 필요하다.</p>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+kafka-python은 Python 3.12에서 안 됨 → kafka-python-ng 사용
+봇 필터 3가지: ① status 400 ② 공격성 경로 패턴 ③ 봇 User-Agent
+auto_offset_reset='earliest' + group_id 조합으로 중복 없이 처음부터 읽기
+depends_on은 순서만 보장 → 재시도 루프는 코드에서 직접 구현
+    </div>
+  </div>
+
+  <div class="chapter" id="ch10-3">
+    <div class="chapter-num">CHAPTER 10-3</div>
+    <div class="chapter-title">MongoDB 집계 쿼리 — aggregate 파이프라인</div>
+
+    <h2>aggregate란</h2>
+    <p><code>find()</code>는 문서를 그대로 가져온다. <code>aggregate()</code>는 데이터를 <strong>변환·집계</strong>할 수 있다. SQL의 <code>GROUP BY</code>, <code>COUNT</code>, <code>SUM</code>을 MongoDB에서 담당한다.</p>
+    <pre>// SQL
+SELECT path, COUNT(*) as count
+FROM visitor_stats
+WHERE timestamp >= today
+GROUP BY path
+ORDER BY count DESC
+LIMIT 5;
+
+// MongoDB aggregate
+collection.aggregate([
+    { $match:  { timestamp: { $gte: todayStart } } },  // WHERE
+    { $group:  { _id: '$path', count: { $sum: 1 } } }, // GROUP BY + COUNT
+    { $sort:   { count: -1 } },                        // ORDER BY
+    { $limit:  5 },                                    // LIMIT
+])</pre>
+
+    <h2>파이프라인 단계 (stage)</h2>
+    <p>aggregate는 여러 단계(stage)를 순서대로 실행한다. 앞 단계의 결과가 다음 단계의 입력이 된다.</p>
+    <table>
+      <tr><th>Stage</th><th>역할</th><th>SQL 대응</th></tr>
+      <tr><td>$match</td><td>조건으로 필터</td><td>WHERE</td></tr>
+      <tr><td>$group</td><td>필드 기준으로 묶기</td><td>GROUP BY</td></tr>
+      <tr><td>$sort</td><td>정렬</td><td>ORDER BY</td></tr>
+      <tr><td>$limit</td><td>개수 제한</td><td>LIMIT</td></tr>
+      <tr><td>$project</td><td>반환할 필드 선택</td><td>SELECT 컬럼 지정</td></tr>
+      <tr><td>$addFields</td><td>새 필드 추가/계산</td><td>computed column</td></tr>
+    </table>
+
+    <h2>실제 예제 — 오늘 방문자 수</h2>
+    <pre>const todayStart = new Date();
+todayStart.setHours(0, 0, 0, 0);  // 오늘 00:00
+
+const result = await collection.aggregate([
+    // 1단계: 오늘 데이터 + 정적 파일 제외
+    { $match: { timestamp: { $gte: todayStart }, is_static: false } },
+
+    // 2단계: 전체를 하나로 묶어서 집계
+    {
+        $group: {
+            _id: null,                           // 전체를 하나의 그룹으로
+            total: { $sum: 1 },                  // 총 요청 수
+            unique_ips: { $addToSet: '$client_ip' }  // 중복 없는 IP 집합
+        }
+    },
+
+    // 3단계: unique IP 개수 계산
+    { $project: { total: 1, unique_count: { $size: '$unique_ips' } } },
+]).toArray();</pre>
+
+    <h2>$switch — 조건 분기</h2>
+    <p>상태코드를 2xx/3xx/4xx/5xx로 분류할 때 사용한다.</p>
+    <pre>{ $group: {
+    _id: {
+        $switch: {
+            branches: [
+                { case: { $lt: ['$status', 300] }, then: '2xx' },
+                { case: { $lt: ['$status', 400] }, then: '3xx' },
+                { case: { $lt: ['$status', 500] }, then: '4xx' },
+            ],
+            default: '5xx',
+        }
+    },
+    count: { $sum: 1 },
+}}</pre>
+
+    <h2>Promise.all로 병렬 집계</h2>
+    <p>여러 집계를 순서대로 실행하면 합산 시간이 걸린다. <code>Promise.all</code>로 동시에 실행하면 가장 오래 걸리는 것 하나의 시간만 기다리면 된다.</p>
+    <pre>const [todayStats, topPaths, statusDist, recent] = await Promise.all([
+    collection.aggregate([...]).toArray(),   // 오늘 통계
+    collection.aggregate([...]).toArray(),   // 인기 경로
+    collection.aggregate([...]).toArray(),   // 상태코드 분포
+    collection.find({}).sort({timestamp:-1}).limit(10).toArray(),  // 최근 접속
+]);</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+aggregate = SQL의 GROUP BY + COUNT + ORDER BY를 MongoDB에서 하는 방법
+파이프라인 순서: $match → $group → $sort → $limit → $project
+$addToSet: 중복 없는 집합 만들기 → unique 방문자 수 계산에 사용
+Promise.all: 여러 쿼리를 동시에 실행 → 응답 시간 단축
+    </div>
+  </div>
+
+  <div class="chapter" id="ch10-4">
+    <div class="chapter-num">CHAPTER 10-4</div>
+    <div class="chapter-title">TTL 인덱스 — 데이터 자동 만료</div>
+
+    <h2>TTL 인덱스란</h2>
+    <p>TTL(Time To Live) 인덱스는 MongoDB가 일정 시간이 지난 문서를 <strong>자동으로 삭제</strong>하는 기능이다. 로그처럼 오래된 데이터가 필요 없을 때 직접 삭제 쿼리를 짜지 않아도 된다.</p>
+
+    <h2>생성 방법</h2>
+    <pre>// Python (pymongo)
+collection.create_index(
+    [("timestamp", ASCENDING)],
+    expireAfterSeconds=30 * 24 * 3600,  # 30일 = 2,592,000초
+    name="ttl_30days",
+)
+
+// JavaScript (mongoose / mongosh)
+db.visitor_stats.createIndex(
+    { timestamp: 1 },
+    { expireAfterSeconds: 2592000, name: "ttl_30days" }
+)</pre>
+    <p>MongoDB는 백그라운드에서 약 60초마다 만료된 문서를 검사하고 삭제한다. 정확히 만료 시각에 삭제되지는 않지만 60초 이내에 처리된다.</p>
+
+    <h2>주의 — 같은 키에 인덱스 중복 불가</h2>
+    <p>MongoDB는 동일한 키에 두 인덱스를 만들 수 없다. TTL 인덱스를 만들기 전에 같은 키의 일반 인덱스가 있으면 충돌한다.</p>
+    <pre># 오류 메시지
+OperationFailure: An equivalent index already exists with a different name and options.
+Requested index: { key: { timestamp: 1 }, name: "ttl_30days", expireAfterSeconds: 2592000 }
+existing index: { key: { timestamp: 1 }, name: "timestamp_1" }
+
+# 해결: 기존 인덱스 삭제 후 TTL로 재생성
+try:
+    collection.drop_index("timestamp_1")
+except Exception:
+    pass  # 없으면 무시
+collection.create_index(
+    [("timestamp", ASCENDING)],
+    expireAfterSeconds=30 * 24 * 3600,
+    name="ttl_30days",
+)</pre>
+
+    <h2>용량 계산 — 얼마나 쌓이나</h2>
+    <p>visitor_stats는 30일치만 보관하므로 최대 용량을 미리 계산할 수 있다.</p>
+    <pre>일 평균 적재: ~2,900건
+문서 1건 크기: ~0.32 KB
+30일 최대: 2,900 × 30 = 87,000건
+최대 용량: 87,000 × 0.32 KB ≈ 27 MB</pre>
+    <p>서버 디스크 116 GB 기준으로 0.02%도 안 되는 수준이다. 부담 없다.</p>
+
+    <h2>TTL vs 수동 삭제 vs Capped Collection</h2>
+    <table>
+      <tr><th>방법</th><th>특징</th><th>적합한 상황</th></tr>
+      <tr><td>TTL 인덱스</td><td>날짜 기준 자동 만료</td><td>로그, 세션, 캐시</td></tr>
+      <tr><td>수동 deleteMany</td><td>조건을 직접 제어</td><td>복잡한 조건으로 삭제</td></tr>
+      <tr><td>Capped Collection</td><td>최대 크기/건수 초과 시 오래된 것 자동 삭제</td><td>실시간 로그 테일링</td></tr>
+    </table>
+    <p>visitor_stats처럼 <strong>"30일보다 오래된 것 지워라"</strong>는 조건은 TTL 인덱스가 가장 깔끔하다.</p>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+TTL 인덱스 = MongoDB가 오래된 문서를 자동 삭제해주는 기능
+expireAfterSeconds: 초 단위 (30일 = 2,592,000)
+삭제는 약 60초 간격으로 백그라운드에서 실행됨
+같은 키에 일반 인덱스가 있으면 TTL로 만들 수 없음 → drop 후 재생성
+visitor_stats 30일 최대 용량: 약 27 MB → 소형 서버도 부담 없음
     </div>
   </div>
 
