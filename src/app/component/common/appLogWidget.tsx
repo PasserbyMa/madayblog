@@ -14,7 +14,7 @@ const LEVEL_COLOR: Record<LogLine['level'], string> = {
 export default function AppLogWidget() {
     const [logs, setLogs]       = useState<LogLine[]>([]);
     const [filter, setFilter]   = useState('');
-    const [autoScroll, setAuto] = useState(true);
+    const [autoScroll, setAuto] = useState(false);
     const [errOnly, setErrOnly] = useState(false);
     const bottomRef             = useRef<HTMLDivElement>(null);
 

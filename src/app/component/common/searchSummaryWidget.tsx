@@ -6,9 +6,9 @@ import styles from './searchSummaryWidget.module.css';
 type SiteKey = 'inven' | 'dcinside' | 'naver';
 
 const SITES: { key: SiteKey; label: string }[] = [
+    { key: 'naver',    label: '네이버' },
     { key: 'inven',    label: '인벤' },
     { key: 'dcinside', label: '디시인사이드' },
-    { key: 'naver',    label: '네이버' },
 ];
 
 type ResultItem = { title: string; url: string; text: string };
@@ -16,7 +16,7 @@ type SiteResult = { site: SiteKey; name: string; items: ResultItem[] };
 
 export default function SearchSummaryWidget() {
     const [query, setQuery]           = useState('');
-    const [selectedSites, setSelectedSites] = useState<SiteKey[]>(['inven', 'dcinside']);
+    const [selectedSites, setSelectedSites] = useState<SiteKey[]>(['naver', 'inven', 'dcinside']);
     const [isLoading, setIsLoading]   = useState(false);
     const [summary, setSummary]       = useState('');
     const [results, setResults]       = useState<SiteResult[]>([]);

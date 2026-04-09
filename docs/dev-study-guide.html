@@ -273,6 +273,11 @@
     <a class="toc-sub" href="#ch8-1">8-1. 서버 로그를 보는 방법</a>
     <a class="toc-sub" href="#ch8-2">8-2. execSync — 서버에서 shell 명령어 실행</a>
     <a class="toc-sub" href="#ch8-3">8-3. 네이버 검색 API 사용하기</a>
+
+    <div class="toc-chapter">CHAPTER 9. 실전 패턴 & 보안</div>
+    <a class="toc-sub" href="#ch9-1">9-1. 비동기 심화 — Promise.all과 AbortSignal</a>
+    <a class="toc-sub" href="#ch9-2">9-2. 환경변수와 보안 — .env, 커맨드 인젝션</a>
+    <a class="toc-sub" href="#ch9-3">9-3. 위젯 아키텍처 패턴 — API Route + React Hooks</a>
   </div>
 
   <!-- ======================== -->
@@ -1681,7 +1686,7 @@ fetch('http://mablog_ollama:11434/api/generate', {
         stream: false,               // true면 스트리밍
         options: {
             temperature: 0.3,        // 낮을수록 일관된 답변
-            num_predict: 400,        // 최대 토큰 수
+            num_predict: 200,        // 최대 토큰 수 (낮을수록 빠름, 높을수록 긴 답변)
         }
     })
 })
@@ -1724,16 +1729,29 @@ temperature = 응답의 창의성/일관성 조절 (낮을수록 일관적)
 
     <h2>전체 흐름</h2>
     <pre>① 사용자가 검색어 입력 + 사이트 선택
+   (기본값: 네이버 + 인벤 + 디시인사이드 전부 선택)
 ② [검색] 버튼 클릭
 ③ POST /api/search-summary 호출
 ④ 서버에서 선택된 사이트 병렬 크롤링
-   ├── 인벤: search/webzine/article/?query=...
-   └── 디시: search.dcinside.com/post/q/...
-⑤ 각 검색 결과 URL에서 본문 텍스트 추출 (병렬)
-⑥ 수집된 텍스트를 EXAONE 프롬프트에 포함
-⑦ Ollama API 호출 → 요약 생성
-⑧ thinking 태그 제거 후 응답
-⑨ 위젯에 요약 + 출처 목록 표시</pre>
+   ├── 네이버: openapi.naver.com (공식 API)
+   ├── 인벤:   search/webzine/article/?query=...
+   └── 디시:   search.dcinside.com/post/q/...
+⑤ 각 사이트에서 상위 3개 글만 가져옴 (속도 최적화)
+⑥ 본문 텍스트 최대 300자 추출 (병렬, 5초 타임아웃)
+⑦ 수집된 텍스트를 EXAONE 프롬프트에 포함
+⑧ Ollama API 호출 → 요약 생성 (num_predict: 200)
+⑨ thinking 태그 제거 후 응답
+⑩ 위젯에 요약 + 출처 목록 표시</pre>
+
+    <h2>속도 최적화 — 어디서 시간이 걸리나</h2>
+    <p>CPU만으로 AI 추론을 돌리면 느리다. 줄일 수 있는 것을 전부 줄여야 한다.</p>
+    <table>
+      <tr><th>최적화 항목</th><th>변경 전</th><th>변경 후</th><th>효과</th></tr>
+      <tr><td>사이트당 글 수</td><td>5개</td><td>3개</td><td>크롤링 시간 단축</td></tr>
+      <tr><td>본문 최대 길이</td><td>500자</td><td>300자</td><td>AI 입력 토큰 감소</td></tr>
+      <tr><td>AI 출력 토큰</td><td>400</td><td>200</td><td>AI 응답 시간 단축</td></tr>
+    </table>
+    <p>결과: 전체 소요 시간 <strong>30초 → 10~15초</strong>로 단축</p>
 
     <h2>병렬 처리 — Promise.all</h2>
     <pre>// 순차 처리 (느림)
@@ -1822,7 +1840,7 @@ docker logs 명령어는 둘 다 섞어서 보여줌
     <pre>GET /api/system/applog?lines=80&filter=error
     │
     ▼
-execSync('docker logs mablog_nextjs --tail 80 2>&1 | grep ...')
+execSync('docker logs mablog_nextjs --tail 80 2>&1 | grep -v "EACCES|errno|syscall|.next/cache" | ...')
     │
     ▼
 로그 라인별 파싱 → level 판단 (error/warn/success/info)
@@ -1830,10 +1848,12 @@ execSync('docker logs mablog_nextjs --tail 80 2>&1 | grep ...')
     ▼
 위젯에서 5초마다 자동 갱신</pre>
 
+    <p>grep -v의 패턴 선정이 중요하다. Next.js는 <code>errno: -13 / syscall: 'mkdir' / .next/cache</code> 같은 권한 관련 노이즈를 계속 뱉는다. 이걸 제거하지 않으면 실제 에러가 묻힌다.</p>
+
     <table>
       <tr><th>버튼</th><th>기능</th></tr>
       <tr><td>[ERR]</td><td>에러 로그만 필터링</td></tr>
-      <tr><td>[AUTO]</td><td>자동 스크롤 on/off</td></tr>
+      <tr><td>[AUTO]</td><td>자동 스크롤 on/off (기본값: OFF — 켜면 새 로그 따라감)</td></tr>
       <tr><td>[↺]</td><td>수동 새로고침</td></tr>
       <tr><td>filter 입력</td><td>키워드로 로그 검색 (예: search-summary)</td></tr>
     </table>
@@ -1956,6 +1976,259 @@ fetch('https://openapi.naver.com/v1/search/cafearticle.json?query=명조&display
 환경변수: .env에 저장 (코드에 직접 넣으면 보안 위험)
 
 공식 API > 크롤링 (안정성, 속도, 차단 위험 없음)
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- CHAPTER 9. 실전 패턴 & 보안 -->
+  <!-- ======================== -->
+
+  <div class="chapter" id="ch9-1">
+    <div class="chapter-num">CHAPTER 9-1</div>
+    <div class="chapter-title">비동기 심화 — Promise.all과 AbortSignal</div>
+
+    <h2>비동기가 뭔지 다시 정리</h2>
+    <p>자바스크립트는 <strong>한 번에 한 가지 일</strong>만 한다. 근데 네트워크 요청처럼 기다려야 하는 일을 동기로 처리하면 그 동안 아무것도 못 한다.</p>
+    <p><strong>비동기(async/await)</strong>를 쓰면 기다리는 동안 다른 일을 할 수 있다.</p>
+    <pre>// 동기 방식 — 순서대로 기다림
+const a = fetchArticle('인벤 글1')   // 3초 대기
+const b = fetchArticle('인벤 글2')   // 또 3초 대기
+// 총 6초
+
+// 비동기 + Promise.all — 동시에 실행
+const [a, b] = await Promise.all([
+    fetchArticle('인벤 글1'),
+    fetchArticle('인벤 글2'),
+])
+// 총 3초 (가장 오래 걸리는 것만큼만)</pre>
+
+    <h2>Promise.all</h2>
+    <p>여러 개의 비동기 작업을 <strong>동시에 실행</strong>하고, 전부 완료될 때까지 기다린다.</p>
+    <pre>// 실제 사용 예 — 5개 글 본문을 병렬 크롤링
+await Promise.all(items.map(async (item) => {
+    item.text = await fetchArticleText(item.url)
+}))
+
+// map → [Promise, Promise, Promise, Promise, Promise]
+// Promise.all → 동시에 실행, 전부 완료 대기</pre>
+
+    <table>
+      <tr><th></th><th>Promise.all</th><th>순차 await</th></tr>
+      <tr><td>실행 방식</td><td>동시 (병렬)</td><td>하나씩 (순차)</td></tr>
+      <tr><td>소요 시간</td><td>가장 느린 것만큼</td><td>전부 합산</td></tr>
+      <tr><td>실패 시</td><td>하나라도 실패하면 전체 실패</td><td>실패한 것에서 멈춤</td></tr>
+      <tr><td>적합한 상황</td><td>독립적인 여러 요청</td><td>순서가 중요한 작업</td></tr>
+    </table>
+
+    <h2>Promise.allSettled — 실패해도 계속</h2>
+    <p>크롤링처럼 일부가 실패해도 나머지는 계속 돌아야 할 때 쓴다.</p>
+    <pre>const results = await Promise.allSettled([
+    crawlInven(query),
+    crawlDcinside(query),
+    crawlNaver(query),
+])
+
+results.forEach(r => {
+    if (r.status === 'fulfilled') console.log(r.value)
+    if (r.status === 'rejected')  console.log('실패:', r.reason)
+})</pre>
+
+    <h2>AbortSignal — 요청 타임아웃</h2>
+    <p>느린 서버에 요청을 보냈을 때 무한정 기다리지 않도록 <strong>시간 제한</strong>을 건다.</p>
+    <pre>// 5초 안에 안 오면 에러 던짐
+const res = await fetch(url, {
+    signal: AbortSignal.timeout(5000),
+})
+
+// 직접 컨트롤하고 싶을 때
+const controller = new AbortController()
+setTimeout(() => controller.abort(), 5000)
+
+const res = await fetch(url, {
+    signal: controller.signal,
+})</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+Promise.all    = 여러 요청 병렬 실행 → 전부 성공해야 완료
+Promise.allSettled = 실패해도 나머지 계속 → 결과 개별 확인
+AbortSignal.timeout = fetch에 타임아웃 설정 → 무한 대기 방지
+
+크롤링처럼 외부 요청이 많을수록 Promise.all이 필수다.
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch9-2">
+    <div class="chapter-num">CHAPTER 9-2</div>
+    <div class="chapter-title">환경변수와 보안 — .env, 커맨드 인젝션</div>
+
+    <h2>환경변수가 뭔가</h2>
+    <p>API 키, 비밀번호 같은 <strong>민감한 정보를 코드에 직접 쓰지 않기 위한 방법</strong>이다. 코드 밖에 별도로 저장한다.</p>
+    <pre>// 나쁜 방법 ❌ — 코드에 직접 입력
+const secret = "38c7c043f27e52ba19b8a06800e543c1"
+
+// 좋은 방법 ✅ — 환경변수로 분리
+const secret = process.env.GITHUB_SECRET</pre>
+
+    <h2>.env 파일 구조</h2>
+    <pre># .env.production
+NODE_ENV="production"
+GITHUB_SECRET="실제키값"
+NAVER_CLIENT_ID="클라이언트ID"
+NAVER_CLIENT_SECRET="클라이언트시크릿"
+OLLAMA_URL="http://mablog_ollama:11434"</pre>
+
+    <p>이 파일은 <strong>절대 git에 올리면 안 된다.</strong> `.gitignore`에 추가한다.</p>
+    <pre># .gitignore
+.env*     ← 이 한 줄이 .env, .env.local, .env.production 전부 제외</pre>
+
+    <h2>Next.js에서 환경변수 읽기</h2>
+    <table>
+      <tr><th>위치</th><th>접근 방법</th><th>노출 범위</th></tr>
+      <tr><td>서버 (API Route)</td><td><code>process.env.MY_KEY</code></td><td>서버만 (안전)</td></tr>
+      <tr><td>클라이언트 (컴포넌트)</td><td><code>process.env.NEXT_PUBLIC_MY_KEY</code></td><td>브라우저에 노출 (주의)</td></tr>
+    </table>
+    <p><strong>API 키는 절대 NEXT_PUBLIC_ 붙이지 말 것.</strong> 브라우저 개발자 도구에서 다 보인다.</p>
+
+    <h2>커맨드 인젝션 — shell에 사용자 입력을 넣을 때</h2>
+    <p>서버에서 <code>execSync</code>로 shell 명령어를 실행할 때, 사용자 입력을 그대로 넣으면 위험하다.</p>
+    <pre>// 위험 ❌ — 사용자가 "; rm -rf /" 같은 걸 넣으면 서버가 날아감
+const cmd = `docker logs ${req.query.container}`
+execSync(cmd)
+
+// 안전 ✅ — 허용된 값 목록에서만 선택
+const allowed = ['mablog_nextjs', 'mablog_proxy']
+const container = allowed.includes(req.query.container)
+    ? req.query.container
+    : 'mablog_nextjs'
+
+// 또는 문자열에서 위험한 문자 제거
+const filter = userInput.replace(/[^a-zA-Z0-9가-힣\s]/g, '')</pre>
+
+    <div class="qa">
+      <div class="qa-q">Q. 그냥 filter.replace(/"/g, '') 정도면 안전한가?</div>
+      <div class="qa-a">A. 큰따옴표만 제거하면 작은따옴표나 백틱으로 우회 가능하다. 제대로 하려면 allowlist(허용 목록) 방식이나 라이브러리를 쓰는 게 맞다. 하지만 내부 대시보드처럼 신뢰할 수 있는 사용자만 접근한다면 최소한의 필터링으로도 충분하다.</div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+환경변수 = 민감한 정보를 코드 밖으로 분리
+.env 파일은 절대 git에 올리지 말 것 (.gitignore에 추가)
+NEXT_PUBLIC_ 붙이면 브라우저에 노출 → API 키엔 절대 금지
+
+커맨드 인젝션 = 사용자 입력이 shell로 실행될 때 발생
+→ 허용 목록 방식 또는 특수문자 제거로 방어
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <div class="chapter" id="ch9-3">
+    <div class="chapter-num">CHAPTER 9-3</div>
+    <div class="chapter-title">위젯 아키텍처 패턴 — API Route + React Hooks</div>
+
+    <h2>대시보드 위젯의 구조</h2>
+    <p>블로그 대시보드의 모든 위젯은 같은 패턴으로 만들어져 있다.</p>
+    <pre>┌─────────────────────────────────────────┐
+│  클라이언트 컴포넌트 (React)              │
+│  - useState로 데이터 저장                 │
+│  - useEffect로 자동 fetch                 │
+│  - JSX로 화면 렌더링                      │
+└───────────────┬─────────────────────────┘
+                │ fetch (HTTP 요청)
+                ▼
+┌─────────────────────────────────────────┐
+│  Next.js API Route (서버)                │
+│  - 외부 API 호출 / DB 조회 / shell 실행  │
+│  - JSON으로 응답                          │
+└─────────────────────────────────────────┘</pre>
+
+    <h2>왜 이 구조인가</h2>
+    <p>클라이언트(브라우저)에서 직접 외부 서버에 요청하면 두 가지 문제가 생긴다.</p>
+    <table>
+      <tr><th>문제</th><th>설명</th></tr>
+      <tr><td>CORS</td><td>브라우저는 다른 출처로의 요청을 기본 차단한다</td></tr>
+      <tr><td>API 키 노출</td><td>브라우저에서 보내면 Network 탭에 키가 보인다</td></tr>
+    </table>
+    <p>API Route(서버)를 중간에 두면 <strong>CORS 문제 없음 + API 키 숨김</strong> 두 가지가 해결된다.</p>
+
+    <h2>패턴 1: 자동 갱신 위젯 (APP_LOG)</h2>
+    <pre>export default function AppLogWidget() {
+    const [logs, setLogs] = useState([])
+
+    const fetchLogs = async () => {
+        const res  = await fetch('/api/system/applog?lines=80')
+        const data = await res.json()
+        setLogs(data.logs || [])
+    }
+
+    useEffect(() => {
+        fetchLogs()                          // 처음 한 번
+        const id = setInterval(fetchLogs, 5000)  // 5초마다
+        return () => clearInterval(id)        // 컴포넌트 종료 시 정리
+    }, [])
+
+    return (
+        &lt;div&gt;
+            {logs.map((l, i) =&gt; &lt;div key={i}&gt;{l.raw}&lt;/div&gt;)}
+        &lt;/div&gt;
+    )
+}</pre>
+
+    <p><code>setInterval</code>로 주기적 갱신을 구현할 때, <code>return () => clearInterval(id)</code>로 <strong>반드시 정리</strong>해야 한다. 안 하면 컴포넌트가 사라져도 타이머가 계속 돌아서 메모리 누수가 생긴다.</p>
+
+    <h2>패턴 2: 사용자 입력으로 조회 (SEARCH_SUMMARY)</h2>
+    <pre>export default function SearchSummaryWidget() {
+    const [query, setQuery]     = useState('')
+    const [summary, setSummary] = useState('')
+    const [isLoading, setLoading] = useState(false)
+
+    const handleSearch = async () => {
+        setLoading(true)
+        setSummary('')
+
+        const res  = await fetch('/api/search-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query, sites: ['inven', 'dcinside'] }),
+        })
+        const data = await res.json()
+        setSummary(data.summary)
+        setLoading(false)
+    }
+
+    return (
+        &lt;div&gt;
+            &lt;input value={query} onChange={e =&gt; setQuery(e.target.value)}
+                   onKeyDown={e =&gt; e.key === 'Enter' &amp;&amp; handleSearch()} /&gt;
+            &lt;button onClick={handleSearch}&gt;검색&lt;/button&gt;
+            {isLoading &amp;&amp; &lt;div&gt;로딩 중...&lt;/div&gt;}
+            {summary &amp;&amp; &lt;div&gt;{summary}&lt;/div&gt;}
+        &lt;/div&gt;
+    )
+}</pre>
+
+    <h2>useEffect의 의존성 배열</h2>
+    <pre>// 처음 한 번만 실행
+useEffect(() => { fetchData() }, [])
+
+// query가 바뀔 때마다 실행
+useEffect(() => { fetchData() }, [query])
+
+// 아무 state라도 바뀌면 실행 (보통 쓰면 안 됨)
+useEffect(() => { fetchData() })</pre>
+
+    <div class="summary">
+      <div class="summary-title">// 정리</div>
+대시보드 위젯 패턴 = 클라이언트(React) + 서버(API Route)
+클라이언트: useState(데이터 저장) + useEffect(fetch) + JSX(렌더링)
+서버(API Route): 외부 API/DB/shell 실행 → JSON 반환
+
+API Route를 쓰는 이유:
+1. CORS 없이 외부 서버 요청 가능
+2. API 키가 서버에만 있어서 안전
+
+setInterval + clearInterval 세트로 쓸 것 → 정리 안 하면 메모리 누수
     </div>
   </div>
 

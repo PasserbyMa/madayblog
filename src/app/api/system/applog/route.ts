@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
             ? `| grep -i "${filter.replace(/"/g, '')}"`
             : '';
 
-        const cmd = `docker logs mablog_nextjs --tail ${lines} 2>&1 | grep -v "EACCES\\|spawn\\|errno -13" ${filterCmd} | tail -${lines}`;
+        const cmd = `docker logs mablog_nextjs --tail ${lines} 2>&1 | grep -v "EACCES\\|errno\\|syscall\\|spawn\\|\\.next/cache" ${filterCmd} | tail -${lines}`;
         const output = execSync(cmd, { timeout: 5000 }).toString();
 
         const logLines = output

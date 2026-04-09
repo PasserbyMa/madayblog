@@ -20,7 +20,7 @@ async function fetchArticleText(url: string, selectors: string[]): Promise<strin
         const $ = cheerio.load(html);
         for (const sel of selectors) {
             const text = $(sel).text().replace(/\s+/g, ' ').trim();
-            if (text.length > 50) return text.slice(0, 500); // 최대 500자
+            if (text.length > 50) return text.slice(0, 300); // 최대 300자
         }
     } catch { /* timeout or error */ }
     return '';
@@ -37,7 +37,7 @@ async function crawlInven(query: string) {
         const $   = cheerio.load(await res.text());
         const items: { title: string; url: string; text: string }[] = [];
 
-        $('a[target="_blank"]:has(span.subject)').slice(0, 5).each((_, el) => {
+        $('a[target="_blank"]:has(span.subject)').slice(0, 3).each((_, el) => {
             const title = $(el).find('span.subject').text().trim();
             const href  = $(el).attr('href') || '';
             if (title && href) items.push({ title, url: href, text: '' });
@@ -61,7 +61,7 @@ async function crawlDcinside(query: string) {
         const $   = cheerio.load(await res.text());
         const items: { title: string; url: string; text: string }[] = [];
 
-        $('a.tit_txt').slice(0, 5).each((_, el) => {
+        $('a.tit_txt').slice(0, 3).each((_, el) => {
             const title = $(el).text().trim();
             const href  = $(el).attr('href') || '';
             if (title && href) items.push({ title, url: href, text: '' });
@@ -89,7 +89,7 @@ async function crawlNaver(query: string) {
             headers: { 'X-Naver-Client-Id': clientId, 'X-Naver-Client-Secret': clientSecret },
         });
         const data = await res.json();
-        return (data.items || []).slice(0, 5).map((item: { title: string; link: string; description: string }) => ({
+        return (data.items || []).slice(0, 3).map((item: { title: string; link: string; description: string }) => ({
             title: item.title.replace(/<[^>]+>/g, ''),
             url:   item.link,
             text:  item.description.replace(/<[^>]+>/g, ''),
@@ -130,7 +130,7 @@ ${contents}
                 model: 'ingu627/exaone4.0:1.2b',
                 prompt,
                 stream: false,
-                options: { temperature: 0.3, num_predict: 400 },
+                options: { temperature: 0.3, num_predict: 200 },
             }),
         });
         const data = await res.json();

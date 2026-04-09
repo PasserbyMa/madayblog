@@ -107,6 +107,8 @@
     border: 1px solid #1a3a1a;
     border-left: 3px solid #00ff66;
     padding: 14px 16px;
+    max-height: 160px;
+    overflow-y: auto;
 }
 
 .summaryTitle {
