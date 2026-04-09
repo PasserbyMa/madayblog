@@ -33,20 +33,31 @@ async function fetchArticleText(url: string, selectors: string[]): Promise<strin
 async function crawlInven(query: string) {
     try {
         const url = `https://www.inven.co.kr/search/webzine/article/?query=${encodeURIComponent(query)}`;
-        const res = await fetch(url, { headers: HEADERS });
-        const $   = cheerio.load(await res.text());
-        const items: { title: string; url: string; text: string }[] = [];
+        const res  = await fetch(url, { headers: HEADERS });
+        const html = await res.text();
 
-        $('a[target="_blank"]:has(span.subject)').slice(0, 3).each((_, el) => {
-            const title = $(el).find('span.subject').text().trim();
-            const href  = $(el).attr('href') || '';
-            if (title && href) items.push({ title, url: href, text: '' });
-        });
+        // partyArticleList JSON 추출 (검색어 관련 게임 커뮤니티 게시글)
+        const match = html.match(/let partyArticleList = (\[[\s\S]*?\]);/);
+        if (!match) return [];
+
+        type PartyItem = { title: string; subject: string; link: string };
+        const list: PartyItem[] = JSON.parse(match[1]);
+
+        // 검색어 키워드가 title(게임명)에 포함된 것 우선, 없으면 전체에서 slice
+        const keyword = query.split(' ')[0];
+        const filtered = list.filter(i => i.title.includes(keyword));
+        const source   = filtered.length > 0 ? filtered : list;
+
+        const items = source.slice(0, 3).map(i => ({
+            title: i.subject,
+            url:   i.link,
+            text:  '',
+        }));
 
         // 본문 병렬 크롤링
         await Promise.all(items.map(async (item) => {
             item.text = await fetchArticleText(item.url, [
-                '.articleContent', '.board_content', '.article_txt', '.view_content',
+                '.board_content', '.write_div', '.articleContent', '.view_content',
             ]);
         }));
 

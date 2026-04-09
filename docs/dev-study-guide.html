@@ -1734,7 +1734,7 @@ temperature = 응답의 창의성/일관성 조절 (낮을수록 일관적)
 ③ POST /api/search-summary 호출
 ④ 서버에서 선택된 사이트 병렬 크롤링
    ├── 네이버: openapi.naver.com (공식 API)
-   ├── 인벤:   search/webzine/article/?query=...
+   ├── 인벤:   partyArticleList JSON 추출 (커뮤니티 게시판)
    └── 디시:   search.dcinside.com/post/q/...
 ⑤ 각 사이트에서 상위 3개 글만 가져옴 (속도 최적화)
 ⑥ 본문 텍스트 최대 300자 추출 (병렬, 5초 타임아웃)
@@ -1742,6 +1742,29 @@ temperature = 응답의 창의성/일관성 조절 (낮을수록 일관적)
 ⑧ Ollama API 호출 → 요약 생성 (num_predict: 200)
 ⑨ thinking 태그 제거 후 응답
 ⑩ 위젯에 요약 + 출처 목록 표시</pre>
+
+    <h2>인벤 커뮤니티 — partyArticleList 추출</h2>
+    <p>인벤의 커뮤니티 검색은 JavaScript로 렌더링되어 일반 fetch로는 결과를 가져올 수 없다. 대신 웹진 검색 페이지에 <strong>script 태그 안에 JSON으로 삽입된 커뮤니티 게시글 목록</strong>을 정규식으로 추출한다.</p>
+    <pre>// 페이지 HTML 안에 이런 코드가 숨어있다
+let partyArticleList = [
+    {"comeidx":6196,"title":"명조","subject":"명조 뉴비 신캐 육성 가능 확인","link":"https://..."},
+    {"comeidx":6196,"title":"명조","subject":"다가오는 명조 3.2 버전 이벤트 모아보기","link":"https://..."},
+    ...
+];
+
+// 정규식으로 추출
+const match = html.match(/let partyArticleList = (\[[\s\S]*?\]);/);
+const list  = JSON.parse(match[1]);
+
+// 검색 키워드(첫 단어)가 게임명에 포함된 것 우선 필터
+const keyword  = query.split(' ')[0];  // "명조 픽업" → "명조"
+const filtered = list.filter(i => i.title.includes(keyword));
+const source   = filtered.length > 0 ? filtered : list;</pre>
+
+    <div class="qa">
+      <div class="qa-q">Q. 왜 직접 커뮤니티 검색 URL을 쓰지 않나?</div>
+      <div class="qa-a">A. 인벤 커뮤니티 검색은 SPA(Single Page Application) 방식이라 fetch로 받은 HTML에 결과가 없다. JavaScript가 실행되어야 렌더링된다. 그래서 페이지 HTML에 미리 담겨있는 JSON 데이터를 꺼내는 방식을 쓴다.</div>
+    </div>
 
     <h2>속도 최적화 — 어디서 시간이 걸리나</h2>
     <p>CPU만으로 AI 추론을 돌리면 느리다. 줄일 수 있는 것을 전부 줄여야 한다.</p>

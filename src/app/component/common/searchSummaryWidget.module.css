@@ -135,7 +135,7 @@
 }
 
 .sourcesTitle {
-    color: #555;
+    color: #666;
     font-size: 0.8em;
     letter-spacing: 1px;
 }
@@ -143,26 +143,30 @@
 .sourceGroup {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
 }
 
 .sourceSite {
     color: #00ffcc;
-    font-size: 0.8em;
+    font-size: 0.78em;
     margin-bottom: 2px;
+    letter-spacing: 1px;
 }
 
 .sourceLink {
-    color: #555;
+    color: #00aa66;
     text-decoration: none;
-    font-size: 0.82em;
+    font-size: 0.85em;
     transition: color 0.15s;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     display: block;
+    padding-left: 8px;
+    border-left: 2px solid #1a3a2a;
 }
 
 .sourceLink:hover {
     color: #00ff66;
+    border-left-color: #00ff66;
 }
