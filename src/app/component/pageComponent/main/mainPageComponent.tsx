@@ -210,11 +210,11 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                 {/* SEARCH_SUMMARY + APP_LOG (50/50) */}
                 {/* ======================= */}
                 <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '15px' }}>
-                    <div className="gridItem" style={{ flex: 1, minHeight: 300 }}>
+                    <div className="gridItem" style={{ flex: 1, minHeight: 420 }}>
                         <h2 className="moduleTitle">[SEARCH_SUMMARY // EXAONE 4.0]</h2>
                         <SearchSummaryWidget />
                     </div>
-                    <div className="gridItem" style={{ flex: 1, minHeight: 300 }}>
+                    <div className="gridItem" style={{ flex: 1, minHeight: 420 }}>
                         <h2 className="moduleTitle">[APP_LOG // Next.js]</h2>
                         <AppLogWidget />
                     </div>
