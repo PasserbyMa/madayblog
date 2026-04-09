@@ -56,6 +56,8 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
     const [searchQuery, setSearchQuery] = useState('');
     //===
     const isMobile = useMediaQuery('(max-width: 768px)');
+    const [mobileTab, setMobileTab] = useState<'portfolio' | 'server' | 'search'>('portfolio');
+    const show = (tab: 'portfolio' | 'server' | 'search') => !isMobile || mobileTab === tab;
     const [curPage, setCurPage] = useState<number>(1);
     const perPage = isMobile ? 2 : 7;
     const totalPage = Math.ceil(total / perPage);
@@ -120,105 +122,126 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
 
             <AboutMe isLogin={isLogin} stackData={stackData} />
 
-            <div className="dashboardGrid">
-                {/* ======================= */}
-                {/* SYSTEM_STATUS */}
-                {/* ======================= */}
-                <div className="gridItem">
-                    <h2 className="moduleTitle">[SYSTEM_STATUS]</h2>
-                    <GetServerState />
-                </div>
-                {/* ======================= */}
-                {/* DOCKER_CONTAINERS*/}
-                {/* ======================= */}
-                <div className="gridItem">
-                    <h2 className="moduleTitle">[DOCKER_CONTAINERS]</h2>
-                    <DockerContainersBox />
-                </div>
-                {/* ======================= */}
-                {/* CATEGORY_FILTER */}
-                {/* ======================= */}
-                <div className="gridItem">
-                    <h2 className="moduleTitle">[CATEGORY_FILTER]</h2>
-                    <CategoryFilter
-                        onCategoryClick={(cat) => {
-                            setSearchInput(cat);
-                            openModal('more');
-                        }}
-                    />
-                </div>
-                {/* ======================= */}
-                {/* CLOCK */}
-                {/* ======================= */}
-                <div className="gridItem gridItemClock">
-                    <h2 className="moduleTitle">[CLOCK]</h2>
-                    <div className="clockCenter">
-                        <ClockWidget />
-                    </div>
-                </div>
-                {/* ======================= */}
-                {/* RECENT_POSTS*/}
-                {/* ======================= */}
-                <div className={'gridItem'}>
-                    <div className={'moduleHeader'}>
-                        <h2 className={'moduleTitle'}>[RECENT_POSTS]</h2>
+            {/* 모바일 탭 바 */}
+            {isMobile && (
+                <div className="mobileTabBar">
+                    {(['portfolio', 'server', 'search'] as const).map((tab) => (
                         <button
-                            className={'dashboardBtn'}
-                            onClick={() => { openModal('more'); }}
+                            key={tab}
+                            className={`mobileTabBtn${mobileTab === tab ? ' mobileTabBtnActive' : ''}`}
+                            onClick={() => setMobileTab(tab)}
                         >
-                            [more]
+                            {tab === 'portfolio' ? '[Base]' : tab === 'server' ? '[Server]' : '[AI]'}
                         </button>
+                    ))}
+                </div>
+            )}
+
+            <div className="dashboardGrid">
+
+                {/* ── BASE ── */}
+                {show('portfolio') && (
+                    <div className="gridSection">
+                        <span className="gridSectionLabel">BASE</span>
+                        <hr className="gridSectionLine" />
                     </div>
-                    <div className="recentPostList">
-                        {recentPosts.map((v) => (
-                            <div
-                                className="recentPostItem"
-                                key={v.slug.toString()}
-                                onClick={() => {
-                                    setDetailData(v);
-                                    openModal('recentDetail');
-                                }}
-                            >
-                                <span className="recentPostCategory">{v.category}</span>
-                                <span className="recentPostTitle">{v.title}</span>
-                            </div>
-                        ))}
+                )}
+                {show('portfolio') && (
+                    <div className="gridItem gridItemClockFull">
+                        <h2 className="moduleTitle">[CLOCK]</h2>
+                        <div className="clockCenter"><ClockWidget /></div>
                     </div>
-                </div>
-                {/* ======================= */}
-                {/* GITHUB_ACTIVITY */}
-                {/* ======================= */}
-                <div className="gridItem">
-                    <h2 className="moduleTitle">[GITHUB_ACTIVITY]</h2>
-                    <GithubActivity />
-                </div>
-                {/* ======================= */}
-                {/* RASPBERRY_STATUS */}
-                {/* ======================= */}
-                <div className="gridItem">
-                    <h2 className="moduleTitle">[RASPBERRY_PI]</h2>
-                    <RaspberryStatus />
-                </div>
-                {/* ======================= */}
-                {/* NGINX_LOG */}
-                {/* ======================= */}
-                <div className="gridItem gridItemNginx">
-                    <h2 className="moduleTitle">[NGINX_LOG]</h2>
-                    <NginxLogWidget />
-                </div>
-                {/* ======================= */}
-                {/* SEARCH_SUMMARY + APP_LOG (50/50) */}
-                {/* ======================= */}
-                <div className="gridItemRow">
-                    <div className="gridItem" style={{ flex: 1, minHeight: 420 }}>
-                        <h2 className="moduleTitle">[SEARCH_SUMMARY // EXAONE 4.0]</h2>
-                        <SearchSummaryWidget />
+                )}
+                {show('portfolio') && (
+                    <div className={'gridItem'}>
+                        <div className={'moduleHeader'}>
+                            <h2 className={'moduleTitle'}>[RECENT_POSTS]</h2>
+                            <button className={'dashboardBtn'} onClick={() => openModal('more')}>[more]</button>
+                        </div>
+                        <div className="recentPostList">
+                            {recentPosts.map((v) => (
+                                <div className="recentPostItem" key={v.slug.toString()}
+                                    onClick={() => { setDetailData(v); openModal('recentDetail'); }}>
+                                    <span className="recentPostCategory">{v.category}</span>
+                                    <span className="recentPostTitle">{v.title}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div className="gridItem" style={{ flex: 1, minHeight: 420 }}>
+                )}
+                {show('portfolio') && (
+                    <div className="gridItem">
+                        <h2 className="moduleTitle">[CATEGORY_FILTER]</h2>
+                        <CategoryFilter onCategoryClick={(cat) => { setSearchInput(cat); openModal('more'); }} />
+                    </div>
+                )}
+                {show('portfolio') && (
+                    <div className="gridItem">
+                        <h2 className="moduleTitle">[GITHUB_ACTIVITY]</h2>
+                        <GithubActivity />
+                    </div>
+                )}
+
+                {/* ── SERVER ── */}
+                {show('server') && (
+                    <div className="gridSection">
+                        <span className="gridSectionLabel">SERVER</span>
+                        <hr className="gridSectionLine" />
+                    </div>
+                )}
+                {show('server') && (
+                    <div className="gridItem">
+                        <h2 className="moduleTitle">[SYSTEM_STATUS]</h2>
+                        <GetServerState />
+                    </div>
+                )}
+                {show('server') && (
+                    <div className="gridItem">
+                        <h2 className="moduleTitle">[DOCKER_CONTAINERS]</h2>
+                        <DockerContainersBox />
+                    </div>
+                )}
+                {show('server') && (
+                    <div className="gridItem">
+                        <h2 className="moduleTitle">[RASPBERRY_PI]</h2>
+                        <RaspberryStatus />
+                    </div>
+                )}
+                {show('server') && (
+                    <div className="gridItem gridItemNginx">
+                        <h2 className="moduleTitle">[NGINX_LOG]</h2>
+                        <NginxLogWidget />
+                    </div>
+                )}
+                {isMobile && show('server') && (
+                    <div className="gridItem">
                         <h2 className="moduleTitle">[APP_LOG // Next.js]</h2>
                         <AppLogWidget />
                     </div>
-                </div>
+                )}
+
+                {/* ── AI ── */}
+                {show('search') && (
+                    <div className="gridSection">
+                        <span className="gridSectionLabel">AI</span>
+                        <hr className="gridSectionLine" />
+                    </div>
+                )}
+                {show('search') && (
+                    <div className="gridItemRow">
+                        <div className="gridItem">
+                            <h2 className="moduleTitle">[SEARCH_SUMMARY // EXAONE 4.0]</h2>
+                            <SearchSummaryWidget />
+                        </div>
+                        {!isMobile && (
+                            <div className="gridItem">
+                                <h2 className="moduleTitle">[APP_LOG // Next.js]</h2>
+                                <AppLogWidget />
+                            </div>
+                        )}
+                    </div>
+                )}
+
             </div>
             {/* ======================= */}
             {/* More -> ADD 버튼 눌렀을 때 */}

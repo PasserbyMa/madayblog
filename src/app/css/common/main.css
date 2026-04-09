@@ -194,9 +194,36 @@
     padding-top: 20px;
 }
 
-/* NGINX_LOG: 2칸 너비 */
+/* NGINX_LOG: 전체 너비 */
 .gridItemNginx {
-    grid-column: span 2;
+    grid-column: 1 / -1;
+}
+
+/* GITHUB_ACTIVITY: 전체 너비 */
+.gridItemClockFull {
+    grid-column: 1 / -1;
+    height: 120px;
+}
+
+/* 섹션 구분선 */
+.gridSection {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 4px 0 2px;
+}
+.gridSectionLabel {
+    color: #00ffcc;
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 3px;
+    white-space: nowrap;
+}
+.gridSectionLine {
+    flex: 1;
+    border: none;
+    border-top: 1px dashed #1a3a2a;
 }
 
 /* SEARCH_SUMMARY: 전체 너비 */
@@ -210,6 +237,11 @@
     grid-column: 1 / -1;
     display: flex;
     gap: 15px;
+}
+
+.gridItemRow .gridItem {
+    flex: 1;
+    min-height: 420px;
 }
 
 .nginxLog {
@@ -400,9 +432,46 @@
     color: #00ff41;
 }
 
+/* ======================= */
+/* 모바일 탭 바 */
+/* ======================= */
+.mobileTabBar {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobileTabBar {
+        display: flex;
+        width: 95%;
+        margin: 0 auto 10px;
+        border: 1px solid #00ff41;
+        box-shadow: 0 0 5px #00ff41;
+    }
+    .mobileTabBtn {
+        flex: 1;
+        background: transparent;
+        border: none;
+        border-right: 1px solid #00ff41;
+        color: #444;
+        font-family: 'Courier New', monospace;
+        font-size: 0.75rem;
+        padding: 10px 4px;
+        cursor: pointer;
+        letter-spacing: 1px;
+    }
+    .mobileTabBtn:last-child {
+        border-right: none;
+    }
+    .mobileTabBtnActive {
+        background: rgba(0, 255, 65, 0.12);
+        color: #00ff41;
+        box-shadow: inset 0 0 8px rgba(0, 255, 65, 0.2);
+    }
+}
+
 @media (max-width: 768px) {
     .gridItemRow {
-        flex-direction: column;
+        display: contents;
     }
 
     .dashboardHeader {
