@@ -412,6 +412,29 @@ Content-Type: application/json</pre>
       <tr><td>500</td><td>서버 에러</td><td>서버 코드 오류</td></tr>
     </table>
 
+    <h2>curl로 실제 HTTP 요청 보내기</h2>
+    <pre># GET 요청 — 기본
+curl https://madayblog.com/api/posts
+
+# 헤더와 함께 응답 보기 (-i = include headers)
+curl -i https://madayblog.com/api/posts
+
+# 응답 헤더만 보기 (-I = HEAD 요청)
+curl -I https://madayblog.com
+
+# POST 요청 (JSON body 포함)
+curl -X POST https://madayblog.com/api/posts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer 토큰값" \
+  -d '{"title": "테스트", "content": "내용"}'
+
+# 상태 코드만 확인 (-o /dev/null = body 버림, -s = 진행률 숨김, -w = 포맷 지정)
+curl -s -o /dev/null -w "%{http_code}" https://madayblog.com/api/posts
+# → 200
+
+# 응답 시간 확인
+curl -s -o /dev/null -w "time: %{time_total}s\n" https://madayblog.com</pre>
+
     <div class="summary">
       <div class="summary-title">// 정리</div>
 HTTP  = 브라우저와 서버가 대화하는 규칙
@@ -458,6 +481,21 @@ DNS가 변환:  223.130.200.107
     <pre>IP를 바꿨는데 왜 아직 구 서버로 접속되지?
 → TTL이 아직 안 지났기 때문
 → TTL 시간만큼 기다려야 전파 완료 (최대 48시간)</pre>
+
+    <h2>curl로 DNS 조회 직접 확인</h2>
+    <pre># 도메인이 어떤 IP로 연결되는지 확인
+curl -v https://madayblog.com 2>&1 | head -20
+# * Trying 129.154.xx.xx:443...  ← 연결된 IP 확인
+# * Connected to madayblog.com
+
+# DNS 조회만 따로 (dig 명령어)
+dig madayblog.com A
+# ANSWER SECTION:
+# madayblog.com. 300 IN A 129.154.xx.xx
+
+# TTL 확인
+dig madayblog.com A +ttl
+# madayblog.com. 300 IN A 129.154.xx.xx ← 300초 TTL</pre>
 
     <h2>Certbot과 DNS의 연결</h2>
     <p>Certbot이 SSL 인증서 발급받을 때 Let's Encrypt가 "이 서버 진짜 주인 맞아?"를 확인한다. HTTP 방식은 <code>/.well-known/acme-challenge/</code> 경로에 파일을 올려서 증명한다. nginx.conf에 해당 경로 설정이 있는 이유가 이것이다.</p>
@@ -689,6 +727,28 @@ proxy_set_header Connection "upgrade";</pre>
             │
          Next.js 처리 → 응답</pre>
 
+    <h2>curl로 Nginx 헤더 직접 확인</h2>
+    <pre># Nginx가 추가하는 헤더 확인
+curl -sI https://madayblog.com | grep -E "server|x-"
+# server: nginx
+# x-powered-by: Next.js   (Next.js가 추가)
+
+# HTTP → HTTPS 리다이렉트 확인 (301 응답 확인)
+curl -sI http://madayblog.com
+# HTTP/1.1 301 Moved Permanently
+# Location: https://madayblog.com/
+
+# SSL 인증서 정보 확인
+curl -vI https://madayblog.com 2>&1 | grep -E "subject|expire|SSL"
+# * SSL connection using TLSv1.3
+# * Server certificate: madayblog.com
+
+# 응답 헤더 전체 보기
+curl -D - https://madayblog.com/api/posts -o /dev/null -s
+# HTTP/2 200
+# content-type: application/json
+# ...</pre>
+
     <div class="summary">
       <div class="summary-title">// 정리</div>
 80 포트  = HTTP 접속 → HTTPS로 강제 리다이렉트 (301)
@@ -793,6 +853,35 @@ COPY package.json .
 RUN npm install
 COPY . .      ← 소스코드는 여기서 복사</pre>
 
+    <h2>실제 Next.js Dockerfile 전체 예시</h2>
+    <pre># ── 1단계: 의존성 설치 ──────────────────────────────
+FROM node:18-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --only=production   # npm install보다 빠름, lock 파일 기준 설치
+
+# ── 2단계: 빌드 ─────────────────────────────────────
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build              # .next/ 폴더 생성
+
+# ── 3단계: 실행 (최종 이미지) ───────────────────────
+FROM node:18-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# 빌드 결과물만 복사 (node_modules, 소스코드 제외)
+COPY --from=builder /app/public      ./public
+COPY --from=builder /app/.next       ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+EXPOSE 8080
+CMD ["npm", "start"]</pre>
+
     <h2>멀티 스테이지 빌드</h2>
     <pre># 1단계 - 빌드
 FROM node:18-alpine AS builder
@@ -808,6 +897,29 @@ CMD ["node", "server.js"]</pre>
       <tr><td>이미지 크기</td><td>~1GB</td><td>~200MB</td></tr>
       <tr><td>포함 내용</td><td>빌드 도구 + node_modules + 결과물</td><td>결과물만</td></tr>
     </table>
+
+    <h2>컨테이너 디버깅 패턴</h2>
+    <pre># 1. 컨테이너가 바로 종료되는 경우 — 로그 확인
+docker logs mablog_nextjs
+# "Error: Cannot find module '/app/server.js'"  ← CMD 경로 오류
+# "PORT already in use"  ← 포트 충돌
+
+# 2. 컨테이너 안에서 직접 확인
+docker exec -it mablog_nextjs sh
+ls /app               # 파일이 제대로 복사됐는지 확인
+env | grep NODE_ENV   # 환경변수 확인
+cat /app/package.json # package.json 내용 확인
+
+# 3. 실행 안 되는 이미지 — 임시로 sh로 진입
+docker run --rm -it 이미지명 sh
+# 컨테이너가 바로 꺼지는 경우 CMD를 sh로 override해서 진입
+
+# 4. 빌드 캐시 강제 무효화 (캐시 꼬였을 때)
+docker-compose build --no-cache mablog_nextjs
+
+# 5. 컨테이너 간 네트워크 통신 확인
+docker exec mablog_nextjs sh -c "wget -qO- http://mablog_mongodb:27017"
+# MongoDB에서 "It looks like you are trying to access MongoDB over HTTP"  → 통신 OK</pre>
 
     <div class="summary">
       <div class="summary-title">// 정리</div>
@@ -1229,6 +1341,46 @@ const postsSchema = new Schema({
       <tr><td>default: value</td><td>값이 없을 때 자동으로 넣을 기본값</td></tr>
     </table>
 
+    <h2>MongoDB 연결 싱글톤 패턴</h2>
+    <pre>// lib/mongodb.ts — 연결을 한 번만 만들고 재사용
+import mongoose from 'mongoose';
+
+const MONGO_URI = process.env.MONGO_URI!;
+
+// Next.js 핫 리로드 시 전역 변수로 연결 캐싱
+let cached = (global as any).mongoose;
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null, promise: null };
+}
+
+export async function connectDB() {
+  if (cached.conn) return cached.conn;  // 이미 연결됐으면 재사용
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGO_URI, {
+      bufferCommands: false,  // 연결 전 쿼리 버퍼링 비활성화
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;  // 실패 시 다음 호출에서 재시도 가능하게
+    throw e;
+  }
+
+  return cached.conn;
+}
+
+// 사용법: API Route에서
+import { connectDB } from '@/lib/mongodb';
+
+export async function GET() {
+  await connectDB();                    // 연결 보장
+  const posts = await ModelPostsSetting.find({}).lean();
+  return Response.json(posts);
+}</pre>
+
     <h2>Model — Schema로 만든 클래스</h2>
     <pre>const ModelPostsSetting =
   mongoose.models.posts ?? mongoose.model('posts', postsSchema);
@@ -1261,6 +1413,37 @@ await ModelPostsSetting.deleteMany({ category: 'temp' });</pre>
       <tr><td>{ new: true } 없으면?</td><td>findByIdAndUpdate가 수정 전 문서를 반환</td></tr>
       <tr><td>_id가 문자열이 아닌 이유</td><td>MongoDB 내부에서 ObjectId 타입으로 저장 → .toString() 필요</td></tr>
     </table>
+
+    <h2>에러 핸들링 패턴</h2>
+    <pre>// API Route에서 DB 에러 처리
+export async function GET(req: Request) {
+  try {
+    await connectDB();
+    const posts = await ModelPostsSetting.find({}).lean();
+    return Response.json({ posts });
+
+  } catch (error) {
+    // MongoDB 연결 실패
+    if (error instanceof mongoose.Error.MongooseServerSelectionError) {
+      console.error('[DB] 연결 실패:', error.message);
+      return Response.json({ error: 'DB 연결 오류' }, { status: 503 });
+    }
+
+    // 유효성 검사 실패 (required 필드 누락 등)
+    if (error instanceof mongoose.Error.ValidationError) {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return Response.json({ error: messages }, { status: 400 });
+    }
+
+    // 중복 키 에러 (unique 필드 중복)
+    if ((error as any).code === 11000) {
+      return Response.json({ error: 'slug가 이미 존재합니다' }, { status: 409 });
+    }
+
+    console.error('[DB] 알 수 없는 오류:', error);
+    return Response.json({ error: '서버 오류' }, { status: 500 });
+  }
+}</pre>
 
     <h2>페이지네이션 패턴</h2>
     <pre>async function getPosts(page: number, limit: number) {
@@ -1430,6 +1613,45 @@ Group B (알림팀):     offset 0~4 전부 처리 (독립적으로)
 
 → 같은 메시지를 여러 용도로 사용 가능</pre>
 
+    <h2>kafka-python 최소 예시 — Producer & Consumer</h2>
+    <pre># pip install kafka-python-ng
+
+# ── Producer: 메시지 보내기 ───────────────────────────
+from kafka import KafkaProducer
+import json
+
+producer = KafkaProducer(
+    bootstrap_servers='localhost:9092',
+    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+)
+
+# 메시지 전송 (비동기)
+producer.send('nginx-logs', {
+    'path': '/api/posts',
+    'status': 200,
+    'client_ip': '1.2.3.4',
+})
+producer.flush()  # 버퍼에 쌓인 메시지 전부 전송 후 대기
+producer.close()
+
+# ── Consumer: 메시지 읽기 ────────────────────────────
+from kafka import KafkaConsumer
+import json
+
+consumer = KafkaConsumer(
+    'nginx-logs',
+    bootstrap_servers='mablog_kafka:9092',
+    group_id='my-consumer-group',
+    auto_offset_reset='earliest',   # 처음부터 읽기
+    value_deserializer=lambda v: json.loads(v.decode('utf-8')),
+)
+
+for message in consumer:
+    record = message.value          # dict로 자동 변환
+    topic  = message.topic          # 'nginx-logs'
+    offset = message.offset         # 이 메시지의 offset 번호
+    print(f"[offset {offset}] {record['path']} → {record['status']}")</pre>
+
     <div class="summary">
       <div class="summary-title">// 정리</div>
 Topic          = 메시지 분류함 (채널)
@@ -1537,6 +1759,78 @@ DELETE /api/posts          → 포스트 삭제 (관리자 전용)
 GET    /api/posts/[slug]   → 포스트 단건 조회
 GET    /api/system/server  → 서버 상태
 GET    /api/system/docker  → Docker 컨테이너 목록 (SSE)</pre>
+
+    <h2>Next.js API Route — GET / POST 실제 예시</h2>
+    <pre>// app/api/posts/route.ts
+
+import { NextRequest } from 'next/server';
+import { connectDB } from '@/lib/mongodb';
+import ModelPostsSetting from '@/models/Post';
+
+// ── GET /api/posts?page=1&limit=7&query=docker ──────
+export async function GET(req: NextRequest) {
+  await connectDB();
+
+  const { searchParams } = req.nextUrl;
+  const page  = Number(searchParams.get('page')  ?? 1);
+  const limit = Number(searchParams.get('limit') ?? 7);
+  const query = searchParams.get('query') ?? '';
+
+  const filter = query
+    ? { $or: [
+        { title:    { $regex: query, $options: 'i' } },
+        { category: { $regex: query, $options: 'i' } },
+      ]}
+    : {};
+
+  const [posts, total] = await Promise.all([
+    ModelPostsSetting.find(filter)
+      .sort({ date: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    ModelPostsSetting.countDocuments(filter),
+  ]);
+
+  return Response.json({ posts, total, page, limit });
+}
+
+// ── POST /api/posts ─────────────────────────────────
+export async function POST(req: NextRequest) {
+  await connectDB();
+
+  const body = await req.json();
+  const { title, content, category, slug } = body;
+
+  if (!title || !content || !category || !slug) {
+    return Response.json({ error: '필수 필드 누락' }, { status: 400 });
+  }
+
+  const post = await ModelPostsSetting.create({ title, content, category, slug });
+  return Response.json(post, { status: 201 });
+}</pre>
+
+    <h2>인증 미들웨어 패턴 (관리자 전용 API)</h2>
+    <pre>// lib/auth.ts — 세션에서 관리자 여부 확인
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+
+export async function isAdmin(): Promise&lt;boolean&gt; {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return false;
+
+  // 환경변수의 ADMIN_ID와 GitHub userId 비교
+  const adminId = process.env.ADMIN_GITHUB_ID;
+  return (session.user as any).id === adminId;
+}
+
+// API Route에서 사용
+export async function POST(req: NextRequest) {
+  if (!(await isAdmin())) {
+    return Response.json({ error: '권한 없음' }, { status: 403 });
+  }
+  // 관리자 전용 로직 ...
+}</pre>
 
     <div class="summary">
       <div class="summary-title">// 정리</div>
@@ -1732,6 +2026,65 @@ $('a.title').text()            ← 이후 문법 동일</pre>
       <tr><td>부모 자식</td><td>부모 안의 자식</td><td>$('.list a')</td></tr>
       <tr><td>[속성=값]</td><td>속성 필터</td><td>$('a[target="_blank"]')</td></tr>
     </table>
+
+    <h2>fetch + cheerio 실제 파싱 예시</h2>
+    <pre>// npm install cheerio
+import * as cheerio from 'cheerio';
+
+async function crawlDcinside(query: string) {
+  const url = `https://search.dcinside.com/post/q/${encodeURIComponent(query)}`;
+
+  // 봇 차단 우회 — 실제 브라우저처럼 헤더 설정
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept-Language': 'ko-KR,ko;q=0.9',
+    },
+    signal: AbortSignal.timeout(5000),  // 5초 타임아웃
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  const html = await res.text();
+  const $ = cheerio.load(html);
+  const results: { title: string; url: string; }[] = [];
+
+  // CSS 선택자로 게시글 목록 추출
+  $('.gall_list .ub-content').each((_, el) => {
+    const title = $(el).find('.tit_link').text().trim();
+    const href  = $(el).find('.tit_link').attr('href') ?? '';
+    const url   = href.startsWith('http') ? href : `https://gall.dcinside.com${href}`;
+
+    if (title) results.push({ title, url });
+  });
+
+  return results.slice(0, 3);  // 상위 3개만
+}
+
+// 텍스트 추출 — 본문 크롤링
+async function fetchArticleText(url: string): Promise&lt;string&gt; {
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0...' },
+      signal: AbortSignal.timeout(5000),
+    });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    // script, style, 광고 제거
+    $('script, style, .ad, .banner').remove();
+
+    // 본문 텍스트만 추출
+    const text = $('body').text()
+      .replace(/\s+/g, ' ')  // 연속 공백 정리
+      .trim()
+      .slice(0, 300);         // 최대 300자
+
+    return text;
+  } catch {
+    return '';  // 타임아웃 등 실패 시 빈 문자열
+  }
+}</pre>
 
     <h2>크롤링의 한계</h2>
     <table>
@@ -2029,6 +2382,58 @@ execSync(`docker logs mablog_nextjs 2>&1 | grep "${filter}"`)
 이걸 Command Injection 취약점이라고 한다.
 외부에서 받은 값을 shell 명령에 쓸 때는 반드시 검증해야 한다.</pre>
 
+    <h2>/proc 파일 직접 읽기 — 서버 리소스 모니터링</h2>
+    <pre>// Linux /proc 가상 파일시스템에서 시스템 정보 읽기
+// execSync 없이도 fs.readFileSync로 바로 읽을 수 있음
+import fs from 'fs';
+
+// ── CPU 사용률 ────────────────────────────────────────
+function getCpuUsage(): number {
+  // /proc/stat 예시: "cpu  264369 0 56135 1337... "
+  const stat1 = fs.readFileSync('/proc/stat', 'utf-8').split('\n')[0];
+  const nums1 = stat1.split(/\s+/).slice(1).map(Number);
+  const idle1 = nums1[3];
+  const total1 = nums1.reduce((a, b) => a + b, 0);
+
+  // 100ms 후 다시 읽어서 비교 (간단 버전은 uptime 명령어 사용)
+  const uptime = fs.readFileSync('/proc/uptime', 'utf-8');
+  // "12345.67 9876.54"  → 첫 번째가 부팅 후 경과 초, 두 번째가 idle 시간
+  return parseFloat(uptime.split(' ')[0]);
+}
+
+// ── 메모리 사용량 ────────────────────────────────────
+function getMemoryInfo() {
+  // /proc/meminfo 예시:
+  // MemTotal:       24112128 kB
+  // MemFree:         2234832 kB
+  // MemAvailable:   19876544 kB
+  const meminfo = fs.readFileSync('/proc/meminfo', 'utf-8');
+  const parse = (key: string) => {
+    const match = meminfo.match(new RegExp(`${key}:\\s+(\\d+)`));
+    return match ? parseInt(match[1]) * 1024 : 0;  // KB → Bytes
+  };
+
+  const total     = parse('MemTotal');
+  const available = parse('MemAvailable');
+  const used      = total - available;
+
+  return {
+    total_gb:     (total / 1e9).toFixed(1),
+    used_gb:      (used  / 1e9).toFixed(1),
+    usage_percent: ((used / total) * 100).toFixed(1),
+  };
+}
+
+// ── 실제 /api/system/server 에서 사용 ───────────────
+export async function GET() {
+  const mem = getMemoryInfo();
+  // execSync로 CPU는 shell 명령으로 읽음 (계산이 복잡해서)
+  const cpuRaw = execSync("top -bn1 | grep 'Cpu(s)' | awk '{print $2}'")
+    .toString().trim();
+
+  return Response.json({ mem, cpu: cpuRaw });
+}</pre>
+
     <div class="summary">
       <div class="summary-title">// 정리</div>
 execSync = Node.js에서 shell 명령어 동기 실행
@@ -2038,6 +2443,11 @@ child_process 모듈에 포함
 사용자 입력을 shell 명령에 직접 삽입 금지
 → Command Injection 취약점
 → 입력값 정규식으로 특수문자 제거 후 사용
+
+/proc = Linux 가상 파일시스템 (시스템 정보 직접 읽기)
+/proc/meminfo = 메모리 상태
+/proc/stat    = CPU 통계
+/proc/uptime  = 부팅 후 경과 시간
     </div>
   </div>
 
@@ -2219,6 +2629,37 @@ OLLAMA_URL="http://mablog_ollama:11434"</pre>
       <tr><td>클라이언트 (컴포넌트)</td><td><code>process.env.NEXT_PUBLIC_MY_KEY</code></td><td>브라우저에 노출 (주의)</td></tr>
     </table>
     <p><strong>API 키는 절대 NEXT_PUBLIC_ 붙이지 말 것.</strong> 브라우저 개발자 도구에서 다 보인다.</p>
+
+    <h2>.env 실제 사용 패턴 — 타입 안전하게 읽기</h2>
+    <pre># .env.local (로컬 개발용)
+MONGO_URI=mongodb://localhost:27017/mydb
+NAVER_CLIENT_ID=발급받은ID
+NAVER_CLIENT_SECRET=발급받은시크릿
+ADMIN_GITHUB_ID=123456789
+OLLAMA_URL=http://localhost:11434
+
+# .env.production (서버용, git 제외)
+MONGO_URI=mongodb://mongoAdmin:비밀번호@mablog_mongodb:27017/DB명?authSource=admin
+NAVER_CLIENT_ID=발급받은ID
+NAVER_CLIENT_SECRET=발급받은시크릿</pre>
+
+    <pre>// lib/env.ts — 환경변수 검증 & 타입 안전하게 관리
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) throw new Error(`환경변수 ${key}가 설정되지 않았습니다`);
+  return value;
+}
+
+export const env = {
+  mongoUri:       requireEnv('MONGO_URI'),
+  naverClientId:  requireEnv('NAVER_CLIENT_ID'),
+  naverSecret:    requireEnv('NAVER_CLIENT_SECRET'),
+  ollamaUrl:      process.env.OLLAMA_URL ?? 'http://localhost:11434',  // 기본값 있으면 optional
+};
+
+// 사용
+import { env } from '@/lib/env';
+fetch(env.ollamaUrl + '/api/generate', { ... });</pre>
 
     <h2>커맨드 인젝션 — shell에 사용자 입력을 넣을 때</h2>
     <p>서버에서 <code>execSync</code>로 shell 명령어를 실행할 때, 사용자 입력을 그대로 넣으면 위험하다.</p>
@@ -2606,6 +3047,82 @@ const result = await collection.aggregate([
     collection.find({}).sort({timestamp:-1}).limit(10).toArray(),  // 최근 접속
 ]);</pre>
 
+    <h2>실전 전체 예시 — /api/system/visitor API Route</h2>
+    <pre>// app/api/system/visitor/route.ts
+import { MongoClient } from 'mongodb';
+
+export async function GET() {
+  const client = new MongoClient(process.env.MONGO_URI!);
+  await client.connect();
+  const collection = client.db().collection('visitor_stats');
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 7);
+
+  // 4개 쿼리를 병렬로 실행
+  const [today, weekly, topPaths, statusDist] = await Promise.all([
+
+    // 오늘: 전체 요청 수 + 고유 IP 수
+    collection.aggregate([
+      { $match: { timestamp: { $gte: todayStart }, is_static: false } },
+      { $group: {
+          _id: null,
+          total:      { $sum: 1 },
+          unique_ips: { $addToSet: '$client_ip' },
+      }},
+      { $project: { total: 1, unique: { $size: '$unique_ips' } } },
+    ]).toArray(),
+
+    // 주간: 날짜별 방문자 수
+    collection.aggregate([
+      { $match: { timestamp: { $gte: weekStart }, is_static: false } },
+      { $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+          count: { $sum: 1 },
+      }},
+      { $sort: { _id: 1 } },
+    ]).toArray(),
+
+    // 인기 경로 Top 5
+    collection.aggregate([
+      { $match: { timestamp: { $gte: weekStart }, is_static: false, status: 200 } },
+      { $group: { _id: '$path', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+    ]).toArray(),
+
+    // 상태코드 분포
+    collection.aggregate([
+      { $match: { timestamp: { $gte: todayStart } } },
+      { $group: {
+          _id: {
+            $switch: {
+              branches: [
+                { case: { $lt: ['$status', 300] }, then: '2xx' },
+                { case: { $lt: ['$status', 400] }, then: '3xx' },
+                { case: { $lt: ['$status', 500] }, then: '4xx' },
+              ],
+              default: '5xx',
+            }
+          },
+          count: { $sum: 1 },
+      }},
+    ]).toArray(),
+  ]);
+
+  await client.close();
+
+  return Response.json({
+    today:      today[0] ?? { total: 0, unique: 0 },
+    weekly,
+    topPaths,
+    statusDist,
+  });
+}</pre>
+
     <div class="summary">
       <div class="summary-title">// 정리</div>
 aggregate = SQL의 GROUP BY + COUNT + ORDER BY를 MongoDB에서 하는 방법
@@ -2794,6 +3311,30 @@ crontab -e
 # 분(0-59) 시(0-23) 일(1-31) 월(1-12) 요일(0-7, 0·7=일)
 # *  = 매번
 # */5 = 5마다 (예: 분에 쓰면 5분마다)</pre>
+
+    <h2>실제 시나리오 — 문제 상황별 대처</h2>
+    <pre># 시나리오 1: "사이트가 갑자기 안 돼요"
+docker ps                          # 컨테이너 상태 확인 (Exited?)
+docker logs mablog_nginx --tail 20  # Nginx 에러 확인
+docker logs mablog_nextjs --tail 20 # Next.js 에러 확인
+free -h                            # 메모리 부족인지 확인
+df -h                              # 디스크 꽉 찼는지 확인
+
+# 시나리오 2: "API 응답이 너무 느려요"
+curl -s -o /dev/null -w "%{time_total}s\n" https://madayblog.com/api/posts
+# → 3.5s 이면 문제
+docker stats mablog_nextjs          # CPU/메모리 사용률 실시간 확인
+
+# 시나리오 3: "디스크가 꽉 찼다는 알림"
+df -h                              # 어느 파티션이 꽉 찼는지
+du -sh /home/ubuntu/mam/*          # 어느 폴더가 큰지
+du -sh /home/ubuntu/mam/nginx_logs/ # 로그 폴더 용량 확인
+docker system prune                # 안 쓰는 이미지/컨테이너 정리
+
+# 시나리오 4: "컨테이너가 계속 재시작해요"
+docker ps -a                       # 재시작 횟수 확인
+docker logs mablog_kafka --tail 30  # 재시작 원인 찾기
+# → OOMKilled: 메모리 부족으로 OS가 강제 종료한 것</pre>
 
     <div class="summary">
       <div class="summary-title">// 자주 쓰는 조합</div>
@@ -3187,6 +3728,30 @@ db.stats()
 /api/*    → API 서버들
 /static/* → 정적 파일 서버
 /         → Next.js 서버들</pre>
+
+    <h2>로드밸런싱 동작 확인 — curl로 테스트</h2>
+    <pre># 어느 서버가 응답했는지 확인하기 위해 커스텀 헤더 추가
+# nginx.conf에서 각 upstream 서버마다 다른 헤더 반환하도록 설정 후:
+
+# 10회 요청 — 어떤 서버가 몇 번 응답했는지 확인
+for i in {1..10}; do
+    curl -s -o /dev/null -w "%{http_code} " https://madayblog.com/api/health
+done
+# → 200 200 200 200 200 200 200 200 200 200 (전부 성공이면 OK)
+
+# 응답 시간 분포 확인
+for i in {1..5}; do
+    curl -s -o /dev/null -w "time: %{time_total}s\n" https://madayblog.com/api/posts
+done
+# time: 0.234s
+# time: 0.198s
+# time: 0.251s  ← 서버별로 응답 시간 다르면 로드밸런싱 동작 중
+
+# 특정 서버가 다운됐을 때 자동 failover 확인
+docker stop mablog_nextjs_2           # 서버 하나 강제 종료
+curl -s -o /dev/null -w "%{http_code}" https://madayblog.com/api/posts
+# → 200 (나머지 서버가 처리, 사용자는 에러 못 느낌)
+docker start mablog_nextjs_2          # 복구</pre>
 
     <div class="summary">
       <div class="summary-title">// 정리</div>
