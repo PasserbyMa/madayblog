@@ -5,7 +5,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+COPY patches/ ./patches/
+RUN npm ci --legacy-peer-deps
 
 COPY . .
 RUN npm run build

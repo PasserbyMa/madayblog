@@ -1,0 +1,12 @@
+diff --git a/node_modules/@auth/core/lib/actions/callback/oauth/callback.js b/node_modules/@auth/core/lib/actions/callback/oauth/callback.js
+index bebeddb..4c047df 100644
+--- a/node_modules/@auth/core/lib/actions/callback/oauth/callback.js
++++ b/node_modules/@auth/core/lib/actions/callback/oauth/callback.js
+@@ -48,6 +48,7 @@ export async function handleOAuth(params, cookies, options) {
+     else {
+         as = {
+             issuer: provider.issuer ?? "https://authjs.dev", // TODO: review fallback issuer
++            authorization_response_iss_parameter_supported: false,
+             token_endpoint: token?.url.toString(),
+             userinfo_endpoint: userinfo?.url.toString(),
+         };

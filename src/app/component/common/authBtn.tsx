@@ -1,27 +1,24 @@
 'use client';
 
 import { useEffect } from 'react';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { useSession } from '@/app/component/authProvider/authProviderWrapper';
 
-// GIT 로그인을 위한 버튼
 export default function AuthButton({ isLogin }: { isLogin: (check: boolean) => void }) {
-    //세션을 가져오는 부분
     const { data: session } = useSession();
 
     useEffect(() => {
-        if (session) isLogin(true);
-        else isLogin(false);
+        isLogin(!!session?.user);
     }, [session, isLogin]);
 
-    if (session) {
+    if (session?.user) {
         return (
-            <button onClick={() => signOut()} className="dashboardBtn">
+            <button onClick={() => { window.location.href = '/api/auth/logout'; }} className="dashboardBtn">
                 Logout
             </button>
         );
     }
     return (
-        <button onClick={() => signIn('github')} className="dashboardBtn">
+        <button onClick={() => { window.location.href = '/api/auth/login'; }} className="dashboardBtn">
             Login(GiT)
         </button>
     );

@@ -3994,6 +3994,117 @@ checks: ['state'] = state 파라미터만으로 검증 (GitHub OAuth 표준 방�
     </div>
   </div>
 
+  <div class="chapter" id="ch13-2">
+    <div class="chapter-num">CHAPTER 13-2</div>
+    <div class="chapter-title">next-auth 제거 — GitHub OAuth 직접 구현</div>
+
+    <h2>왜 걷어냈나</h2>
+    <p>next-auth v4는 Next.js 15 이상에서 cookies API 변경으로 <code>getAll is not a function</code> 에러가 발생한다. v5(beta)로 올리면 이번엔 <code>@auth/core</code>가 GitHub OAuth token response의 <code>iss</code> 클레임을 OIDC 방식으로 검증하려다 실패한다. GitHub OAuth는 OIDC 디스커버리를 지원하지 않기 때문이다. patch-package로 라이브러리 내부를 수정해도 빌드 타임에 패치가 적용되지 않는 등 부수 문제가 계속 생겼다. 결국 next-auth 자체를 제거하고 직접 구현했다.</p>
+
+    <h2>구조</h2>
+    <pre>src/
+├── lib/auth/
+│   ├── jwt.ts          # JWT 서명/검증 (jose)
+│   └── getSession.ts   # 서버 컴포넌트/API Route용 세션 조회
+└── app/api/auth/
+    ├── login/route.ts            # GitHub authorize URL 리디렉션
+    ├── callback/github/route.ts  # code → token → user → JWT 쿠키 발행
+    ├── logout/route.ts           # 쿠키 삭제
+    └── session/route.ts          # 세션 조회 API (클라이언트용)</pre>
+
+    <h2>GitHub OAuth 흐름</h2>
+    <pre>1. Login 클릭 → GET /api/auth/login
+2. GitHub authorize 페이지로 리디렉션
+3. 사용자 승인 → GitHub가 /api/auth/callback/github?code=xxx 로 리디렉션
+4. code로 access_token 교환 (POST github.com/login/oauth/access_token)
+5. access_token으로 유저 정보 fetch (GET api.github.com/user)
+6. JWT 생성 → HttpOnly 쿠키(ma_session)로 발행
+7. 메인 페이지로 리디렉션</pre>
+
+    <h2>jwt.ts — JWT 발행/검증</h2>
+    <pre>import { SignJWT, jwtVerify } from 'jose';
+
+const secret = new TextEncoder().encode(process.env.AUTH_SECRET);
+
+// 세션 JWT 발행 (7일)
+export async function signSession(payload: SessionPayload): Promise<string> {
+    return new SignJWT({ ...payload })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setExpirationTime('7d')
+        .sign(secret);
+}
+
+// JWT 검증
+export async function verifySession(token: string): Promise<SessionPayload> {
+    const { payload } = await jwtVerify(token, secret);
+    return payload as unknown as SessionPayload;
+}</pre>
+
+    <h2>callback/github/route.ts — 핵심 흐름</h2>
+    <pre>export async function GET(request: Request) {
+    const code = new URL(request.url).searchParams.get('code');
+
+    // 1. code → access_token
+    const { access_token } = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: JSON.stringify({ client_id, client_secret, code }),
+    }).then(r => r.json());
+
+    // 2. access_token → user info
+    const user = await fetch('https://api.github.com/user', {
+        headers: { Authorization: `Bearer ${access_token}` },
+    }).then(r => r.json());
+
+    // 3. JWT 쿠키 발행 후 메인으로 리디렉션
+    const token = await signSession({ ...user, isAdmin: user.id === Number(GIT_ADMIN_ID) });
+    return new Response(null, {
+        status: 302,
+        headers: {
+            Location: '/',
+            'Set-Cookie': `ma_session=${token}; HttpOnly; Secure; Path=/; Max-Age=604800`,
+        },
+    });
+}</pre>
+
+    <h2>getSession.ts — 서버에서 세션 읽기</h2>
+    <pre>import { cookies } from 'next/headers';
+
+export async function getSession() {
+    const token = (await cookies()).get('ma_session')?.value;
+    if (!token) return null;
+    return { user: await verifySession(token) };
+}</pre>
+    <p>기존 <code>getServerSession(authOptions)</code> 자리에 <code>getSession()</code>을 그대로 쓰면 된다.</p>
+
+    <h2>클라이언트 세션 — SessionContext</h2>
+    <p>next-auth의 <code>SessionProvider + useSession</code> 대신 React Context로 직접 구현. 마운트 시 <code>/api/auth/session</code>을 fetch해서 세션 상태를 전역으로 공유한다.</p>
+    <pre>// authProviderWrapper.tsx
+export const SessionContext = createContext(undefined);
+
+export function useSession() {
+    const ctx = useContext(SessionContext);
+    return { data: ctx ?? null };
+}
+
+export default function AuthProviderWrapper({ children }) {
+    const [session, setSession] = useState(undefined);
+    useEffect(() => {
+        fetch('/api/auth/session').then(r => r.json()).then(setSession);
+    }, []);
+    return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;
+}</pre>
+
+    <h2>핵심 요약</h2>
+    <div class="summary-box">
+next-auth v4  = Next.js 15+ cookies API 변경으로 깨짐
+next-auth v5  = GitHub OAuth + OIDC issuer 검증 충돌로 깨짐
+직접 구현     = GitHub OAuth spec 그대로, 라이브러리 의존성 0
+jose          = JWT 서명/검증 (Next.js 내장 패키지라 추가 설치 불필요)
+HttpOnly 쿠키 = XSS로 토큰 탈취 불가 (JS에서 접근 안 됨)
+    </div>
+  </div>
+
   <!-- 마무리 -->
   <div style="text-align:center; padding: 60px 0; color: #333; font-size: 0.85em; letter-spacing: 2px;">
     // END OF DOCUMENT — Ma_Dev 2026.04

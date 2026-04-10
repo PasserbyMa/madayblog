@@ -1,11 +1,12 @@
+import { getSession } from '@/lib/auth/getSession';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+
+
 import { ConnectMongoDB } from '@/app/api/ConnectMongoDB';
 import ModelPostsSetting, { IPostDocument } from '@/app/api/models/posts/model_posts';
 
 export async function POST(request: NextRequest) {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user?.isAdmin) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

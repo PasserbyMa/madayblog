@@ -1,17 +1,26 @@
 'use client';
 
-import { SessionProvider } from 'next-auth/react';
-import { ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { SessionPayload } from '@/lib/auth/jwt';
 
-//===============================================
-// NextAuth 세션 정보를
-// 클라이언트 컴포넌트 전체에서 사용하기 위한 부분
-// useSession()
-// getSession()
-// layout은 server
-// SessionProvider는 client
-// 그래서 이런 방법으로 우회하듯 사용
-//===============================================
+type Session = { user: SessionPayload } | null;
+
+export const SessionContext = createContext<Session | undefined>(undefined);
+
+export function useSession() {
+    const ctx = useContext(SessionContext);
+    return { data: ctx ?? null, status: ctx === undefined ? 'loading' : ctx ? 'authenticated' : 'unauthenticated' };
+}
+
 export default function AuthProviderWrapper({ children }: { children: ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
+    const [session, setSession] = useState<Session | undefined>(undefined);
+
+    useEffect(() => {
+        fetch('/api/auth/session')
+            .then((r) => r.json())
+            .then(setSession)
+            .catch(() => setSession(null));
+    }, []);
+
+    return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;
 }
