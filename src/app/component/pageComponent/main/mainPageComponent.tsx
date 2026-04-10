@@ -263,7 +263,7 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                                 <h2 className="moduleTitle">[ADD Form]</h2>
                             </div>
                             <WriteForm
-                                category={['hobby', 'error', 'study']}
+                                category={['hobby', 'error', 'study', 'algorithm']}
                                 inputList={[
                                     { name: 'title', type: 'input' },
                                     { name: 'content', type: 'TextArea' },
@@ -350,7 +350,7 @@ const MainPageComponent = ({ postData, postTotal, stackData }: { postData: IPost
                                 setDetailData={setDetailData}
                                 setIsOpen={(v) => { if (!v) closeModal(); }}
                                 formData={detail}
-                                category={['hobby', 'error', 'study']}
+                                category={['hobby', 'error', 'study', 'algorithm']}
                                 inputList={[
                                     { name: 'title', type: 'input' },
                                     { name: 'content', type: 'TextArea' },

@@ -3946,6 +3946,54 @@ nginx -t        = 설정 문법 검사 (반영 전 필수)
     </div>
   </div>
 
+  <div class="chapter" id="ch13-1">
+    <div class="chapter-num">CHAPTER 13-1</div>
+    <div class="chapter-title">트러블슈팅 — NextAuth OAuthCallback 에러</div>
+
+    <h2>증상</h2>
+    <p>GitHub 로그인 시도 시 <code>?error=OAuthCallback</code> URL로 리디렉션되며 로그인 실패. Docker 컨테이너 재빌드 후 발생.</p>
+
+    <h2>로그 확인</h2>
+    <pre>docker logs mablog_nextjs --tail=50 2>&amp;1 | grep -i "auth\|oauth\|error"</pre>
+    <p>실제 에러 메시지:</p>
+    <pre>[next-auth][error][OAUTH_CALLBACK_ERROR]
+issuer must be configured on the issuer
+Error [OAuthCallbackError]: issuer must be configured on the issuer</pre>
+
+    <h2>원인</h2>
+    <p>next-auth v4.24.x 에서 GitHub OAuth 사용 시 PKCE(Proof Key for Code Exchange) 검증을 시도하는데, 이 과정에서 issuer(발급자) 정보가 필요하다. 그런데 GitHub OAuth는 OpenID Connect(OIDC) 디스커버리 엔드포인트를 제공하지 않아 issuer를 자동으로 확인할 수 없다. 결과적으로 <code>openid-client</code> 라이브러리가 issuer 미설정 에러를 던진다.</p>
+
+    <h2>체크리스트 — 다른 원인 먼저 제외</h2>
+    <pre># 1. 컨테이너 환경변수 확인
+docker exec mablog_nextjs env | grep -E "NEXTAUTH|GITHUB"
+# NEXTAUTH_URL=https://madayblog.com 이어야 함
+
+# 2. GitHub OAuth App 콜백 URL 확인
+# github.com/settings/developers → OAuth Apps
+# Authorization callback URL: https://도메인/api/auth/callback/github
+
+# 3. 컨테이너 중복 실행 확인
+docker ps | grep next</pre>
+
+    <h2>해결</h2>
+    <p>GitHubProvider에 <code>checks: ['state']</code>를 추가해 PKCE를 비활성화하고 state 검증만 사용한다.</p>
+    <pre># src/app/api/auth/[...nextauth]/route.ts
+GitHubProvider({
+    clientId: process.env.GITHUB_ID!,
+    clientSecret: process.env.GITHUB_SECRET!,
+    checks: ['state'],   // PKCE 비활성화 — GitHub은 OIDC 미지원
+}),</pre>
+    <p>수정 후 컨테이너 재빌드:</p>
+    <pre>docker-compose up -d --build mablog_nextjs</pre>
+
+    <h2>핵심 요약</h2>
+    <div class="summary-box">
+PKCE        = 인증코드 탈취 방지 기법. issuer 정보가 필요함
+GitHub OAuth = OIDC 미지원 → issuer 확인 불가 → 에러
+checks: ['state'] = state 파라미터만으로 검증 (GitHub OAuth 표준 방식)
+    </div>
+  </div>
+
   <!-- 마무리 -->
   <div style="text-align:center; padding: 60px 0; color: #333; font-size: 0.85em; letter-spacing: 2px;">
     // END OF DOCUMENT — Ma_Dev 2026.04
