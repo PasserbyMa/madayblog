@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V2 — madayBlogV2 완전 분석</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d0d0d; color:#c9d1d9; font-family:'Courier New',monospace; font-size:14px; line-height:1.75; padding:40px 20px 80px; }
+.wrap { max-width:900px; margin:0 auto; }
+h1 { color:#00ff41; font-size:1.8rem; text-align:center; padding:30px 0 6px; text-shadow:0 0 8px #00ff41; }
+.sub { color:#8b949e; text-align:center; margin-bottom:40px; font-size:0.85rem; }
+.toc { background:#161b22; border:1px solid #00ff41; border-radius:6px; padding:18px 24px; margin-bottom:40px; }
+.toc h2 { color:#00ff41; margin-bottom:10px; font-size:0.9rem; letter-spacing:1px; }
+.toc a { color:#58a6ff; text-decoration:none; display:block; padding:2px 0; font-size:0.85rem; }
+.toc .sub-link { padding-left:18px; color:#8b949e; font-size:0.8rem; }
+.toc a:hover { color:#00ff41; }
+h2 { color:#00ff41; font-size:1.1rem; border-bottom:2px solid #00ff41; padding-bottom:6px; margin:40px 0 16px; }
+h3 { color:#58a6ff; font-size:0.95rem; margin:20px 0 8px; }
+p { margin-bottom:10px; color:#c9d1d9; }
+ul { padding-left:22px; margin-bottom:12px; }
+li { margin-bottom:4px; }
+pre { background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:14px; overflow-x:auto; margin:10px 0 18px; font-size:0.82rem; line-height:1.65; }
+.lbl { color:#8b949e; font-size:0.75rem; background:#21262d; display:inline-block; padding:2px 8px; border-radius:3px; margin-bottom:4px; }
+table { width:100%; border-collapse:collapse; margin:10px 0 18px; font-size:0.85rem; }
+th { background:#1f2937; color:#00ff41; padding:8px 10px; text-align:left; }
+td { padding:7px 10px; border-bottom:1px solid #21262d; }
+tr:nth-child(even) td { background:#161b22; }
+.box { background:#161b22; border-left:3px solid #00ff41; padding:12px 16px; margin:12px 0; border-radius:0 4px 4px 0; font-size:0.87rem; }
+.box.yel { border-color:#f0e68c; }
+.box.red { border-color:#ff6b6b; }
+.flow { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:14px; margin:10px 0; font-size:0.82rem; line-height:2; }
+.kw { color:#ff7b72; }
+.cm { color:#8b949e; font-style:italic; }
+.str { color:#a5d6ff; }
+.ann { color:#d2a8ff; }
+.type { color:#79c0ff; }
+hr { border:none; border-top:1px solid #21262d; margin:30px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>V2 — madayBlogV2</h1>
+<p class="sub">Spring Boot 3.5.14 · Java 21 · Oracle 23c Free · MyBatis 3.0.5 · Thymeleaf · Spring Security 6 · CRT 터미널 스타일</p>
+
+<div class="toc">
+  <h2>목차</h2>
+  <a href="#overview">1. 프로젝트 개요 &amp; 기술 스택</a>
+  <a href="#arch">2. 아키텍처 &amp; 폴더 구조</a>
+  <a href="#schema">3. DB 스키마 (Oracle posts 테이블)</a>
+  <a href="#properties">4. application.properties</a>
+  <a href="#dto">5. PostDto</a>
+  <a href="#mapper">6. PostMapper.java &amp; PostMapper.xml</a>
+  <a href="#service">7. PostService</a>
+  <a href="#postcontroller">8. PostController</a>
+  <a href="#dashboard">9. DashboardController</a>
+  <a href="#globaladvice">10. GlobalModelAdvice</a>
+  <a href="#auth">11. AuthController</a>
+  <a href="#security">12. SecurityConfig</a>
+  <a href="#sqlservice">13. SqlService</a>
+  <a href="#thymeleaf">14. Thymeleaf 핵심 문법</a>
+  <a href="#docker">15. Docker 설정</a>
+  <a href="#dockerfile">16. Dockerfile (멀티스테이지 빌드)</a>
+  <a href="#cicd">17. GitHub Actions deploy.yml</a>
+</div>
+
+<!-- 1 -->
+<div id="overview">
+<h2>1. 프로젝트 개요 &amp; 기술 스택</h2>
+<p>포트폴리오 블로그. CRT 터미널 스타일 UI. 게시물 CRUD + SQL 콘솔 + 페이지네이션이 핵심.</p>
+
+<table>
+  <tr><th>분류</th><th>기술 / 버전</th><th>역할</th></tr>
+  <tr><td>언어</td><td>Java 21 (LTS)</td><td>애플리케이션 런타임</td></tr>
+  <tr><td>프레임워크</td><td>Spring Boot 3.5.14</td><td>웹 애플리케이션</td></tr>
+  <tr><td>빌드</td><td>Maven (spring-boot-starter-parent 3.5.14)</td><td>의존성 &amp; 빌드</td></tr>
+  <tr><td>DB</td><td>Oracle 23c Free (gvenzl/oracle-free:23-slim)</td><td>관계형 DB (ARM 호환 이미지)</td></tr>
+  <tr><td>JDBC 드라이버</td><td>ojdbc11 (runtime)</td><td>Oracle JDBC 연결</td></tr>
+  <tr><td>SQL Mapper</td><td>MyBatis 3.0.5</td><td>SQL을 XML로 분리 관리</td></tr>
+  <tr><td>템플릿 엔진</td><td>Thymeleaf (spring-boot-starter-thymeleaf)</td><td>서버사이드 HTML 렌더링</td></tr>
+  <tr><td>Security</td><td>Spring Security 6 + thymeleaf-extras-springsecurity6</td><td>로그인 &amp; 권한</td></tr>
+  <tr><td>편의 라이브러리</td><td>Lombok</td><td>@Data, @RequiredArgsConstructor</td></tr>
+  <tr><td>컨테이너</td><td>Docker + Compose V1 (docker-compose)</td><td>Oracle + App 묶어서 배포</td></tr>
+  <tr><td>CI/CD</td><td>GitHub Actions (appleboy/ssh-action@v1)</td><td>main push → 자동 배포</td></tr>
+  <tr><td>서버</td><td>OCI ARM Ubuntu (aarch64)</td><td>4 OCPU 24GB 무료 티어</td></tr>
+  <tr><td>리버스 프록시</td><td>Nginx (mablog_proxy 컨테이너)</td><td>SSL 종료, 경로 라우팅</td></tr>
+</table>
+
+<h3>주요 기능</h3>
+<ul>
+  <li>게시물 CRUD — 작성 / 조회 / 수정 / 삭제</li>
+  <li>대시보드 — 좌측 SQL 콘솔 / 우측 게시물 목록 (페이지네이션 8개씩)</li>
+  <li>SQL 콘솔 — 로그인 후 SELECT / SHOW / DESC / WITH / INSERT / UPDATE / DELETE / DDL 직접 실행</li>
+  <li>모달 팝업으로 게시물 조회 (Ajax fetch → /posts/{id}/data)</li>
+  <li>Spring Security 폼 로그인 (InMemory, admin/admin1234)</li>
+  <li>context-path=/v2 → madayblog.com/v2/ 경로로 서빙</li>
+</ul>
+</div>
+
+<hr>
+
+<!-- 2 -->
+<div id="arch">
+<h2>2. 아키텍처 &amp; 폴더 구조</h2>
+
+<div class="flow">
+브라우저
+  ↓
+[Nginx: mablog_proxy]  ← 포트 80/443, madayblog.com
+  │  /v2/ → proxy_pass http://javablog_app:8080/v2/
+  ↓
+[Spring Boot: javablog_app]  ← Docker (context-path=/v2, port 127.0.0.1:8080)
+  ↓
+[Oracle 23c: javablog_oracle]  ← Docker 내부 네트워크 (javablog_network)
+                                  포트 127.0.0.1:1521 (호스트에서만 접근 가능)
+</div>
+
+<pre>src/main/java/com/madayV2/blog/
+├── BlogApplication.java
+├── config/
+│   ├── SecurityConfig.java        ← Spring Security 6 설정
+│   └── GlobalModelAdvice.java     ← @ControllerAdvice (ctx 전역 주입)
+├── controller/
+│   ├── AuthController.java        ← /login 라우팅
+│   ├── DashboardController.java   ← / 대시보드 &amp; /sql/execute
+│   └── PostController.java        ← /posts/** CRUD
+├── dto/
+│   └── PostDto.java               ← @Data (Lombok)
+├── mapper/
+│   └── PostMapper.java            ← @Mapper 인터페이스
+└── service/
+    ├── PostService.java           ← 비즈니스 로직
+    └── SqlService.java            ← SQL 콘솔 실행 엔진
+
+src/main/resources/
+├── application.properties
+├── mapper/
+│   └── PostMapper.xml             ← 실제 SQL
+├── static/
+│   ├── css/style.css
+│   └── js/dashboard.js
+└── templates/
+    ├── login.html
+    ├── dashboard.html
+    └── posts/
+        ├── list.html
+        ├── detail.html
+        ├── write.html
+        └── edit.html</pre>
+
+<div class="box">
+  <strong>레이어 역할 분리</strong><br>
+  Controller — URL 라우팅만 담당. 비즈니스 로직 없음.<br>
+  Service &nbsp;&nbsp;&nbsp;— 실제 비즈니스 로직. 여러 Mapper 조합 가능.<br>
+  Mapper &nbsp;&nbsp;&nbsp;— DB 접근만 담당. SQL을 XML에서 관리.<br>
+  DTO &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— 계층 간 데이터 운반 그릇.
+</div>
+</div>
+
+<hr>
+
+<!-- 3 -->
+<div id="schema">
+<h2>3. DB 스키마 (Oracle posts 테이블)</h2>
+
+<div class="lbl">Oracle SQL — posts 테이블 &amp; SEQUENCE</div>
+<pre><span class="cm">-- 시퀀스: id 자동 증가</span>
+<span class="kw">CREATE SEQUENCE</span> posts_seq <span class="kw">START WITH</span> 1 <span class="kw">INCREMENT BY</span> 1;
+
+<span class="cm">-- posts 테이블</span>
+<span class="kw">CREATE TABLE</span> posts (
+    id         NUMBER        <span class="kw">DEFAULT</span> posts_seq.NEXTVAL <span class="kw">PRIMARY KEY</span>,
+    title      VARCHAR2(200) <span class="kw">NOT NULL</span>,
+    content    CLOB,
+    category   VARCHAR2(50),
+    author     VARCHAR2(100),
+    created_at DATE          <span class="kw">DEFAULT</span> SYSDATE,
+    updated_at DATE
+);</pre>
+
+<table>
+  <tr><th>컬럼</th><th>타입</th><th>설명</th></tr>
+  <tr><td>id</td><td>NUMBER</td><td>PK, posts_seq.NEXTVAL 자동 할당</td></tr>
+  <tr><td>title</td><td>VARCHAR2(200)</td><td>게시물 제목 (NOT NULL)</td></tr>
+  <tr><td>content</td><td>CLOB</td><td>게시물 본문 (대용량 텍스트)</td></tr>
+  <tr><td>category</td><td>VARCHAR2(50)</td><td>카테고리</td></tr>
+  <tr><td>author</td><td>VARCHAR2(100)</td><td>작성자 (principal.getName())</td></tr>
+  <tr><td>created_at</td><td>DATE</td><td>작성일 (SYSDATE 기본값)</td></tr>
+  <tr><td>updated_at</td><td>DATE</td><td>수정일 (UPDATE 시 SYSDATE 세팅)</td></tr>
+</table>
+
+<div class="box yel">
+  <strong>underscore → camelCase 자동 매핑</strong><br>
+  <code>mybatis.configuration.map-underscore-to-camel-case=true</code> 설정 덕분에<br>
+  DB 컬럼 <code>created_at</code> → PostDto 필드 <code>createdAt</code> 으로 자동 매핑됨.
+</div>
+</div>
+
+<hr>
+
+<!-- 4 -->
+<div id="properties">
+<h2>4. application.properties</h2>
+<div class="lbl">src/main/resources/application.properties</div>
+<pre><span class="cm"># Oracle DB 연결 (로컬 개발용 — 실제 값)</span>
+spring.datasource.url=jdbc:oracle:thin:@localhost:1521/FREEPDB1
+spring.datasource.username=bloguser
+spring.datasource.password=Blog1234
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+
+<span class="cm"># MyBatis</span>
+mybatis.mapper-locations=classpath:mapper/*.xml
+mybatis.type-aliases-package=com.madayV2.blog.dto
+mybatis.configuration.map-underscore-to-camel-case=true
+mybatis.configuration.jdbc-type-for-null=NULL
+
+<span class="cm"># Thymeleaf</span>
+spring.thymeleaf.cache=false
+
+<span class="cm"># 서버 설정</span>
+server.port=8080
+server.servlet.context-path=/v2</pre>
+
+<div class="box yel">
+  <strong>context-path=/v2</strong><br>
+  모든 URL에 /v2 접두사가 자동으로 붙음. <code>@GetMapping("/")</code>은 실제로 <code>/v2/</code>로 서비스됨.<br>
+  Docker 환경에서는 <code>SPRING_DATASOURCE_URL</code> 등 환경변수가 application.properties를 덮어씀.<br>
+  <code>mybatis.configuration.jdbc-type-for-null=NULL</code> — null 파라미터 전달 시 ORA-17004 오류 방지.
+</div>
+</div>
+
+<hr>
+
+<!-- 5 -->
+<div id="dto">
+<h2>5. PostDto</h2>
+<div class="lbl">src/main/java/com/madayV2/blog/dto/PostDto.java</div>
+<pre><span class="kw">package</span> com.madayV2.blog.dto;
+
+<span class="kw">import</span> java.util.Date;
+<span class="kw">import</span> lombok.Data;
+
+<span class="cm">// Lombok @Data: getter/setter/toString/equals/hashCode 자동 생성</span>
+<span class="ann">@Data</span>
+<span class="kw">public class</span> <span class="type">PostDto</span> {
+    <span class="kw">private</span> Long id;
+    <span class="kw">private</span> String title;
+    <span class="kw">private</span> String content;
+    <span class="kw">private</span> String category;
+    <span class="kw">private</span> String author;
+    <span class="cm">// DB 컬럼 created_at → camelCase createdAt 자동 매핑</span>
+    <span class="kw">private</span> Date createdAt;
+    <span class="kw">private</span> Date updatedAt;
+}</pre>
+
+<div class="box">
+  실제 PostDto에는 id, title, content, category, author, createdAt, updatedAt 7개 필드만 존재.<br>
+  페이지네이션 파라미터(offset, limit)는 PostDto가 아니라 PostMapper에서 <code>@Param</code>으로 직접 받음.
+</div>
+</div>
+
+<hr>
+
+<!-- 6 -->
+<div id="mapper">
+<h2>6. PostMapper.java &amp; PostMapper.xml</h2>
+
+<div class="lbl">src/main/java/com/madayV2/blog/mapper/PostMapper.java</div>
+<pre><span class="kw">package</span> com.madayV2.blog.mapper;
+
+<span class="kw">import</span> java.util.List;
+<span class="kw">import</span> org.apache.ibatis.annotations.Mapper;
+<span class="kw">import</span> org.apache.ibatis.annotations.Param;
+<span class="kw">import</span> com.madayV2.blog.dto.PostDto;
+
+<span class="cm">// @Mapper: MyBatis가 이 인터페이스의 구현체를 자동 생성 &amp; Spring Bean 등록</span>
+<span class="cm">// 개발자가 직접 JDBC 코드 작성 불필요 — PostMapper.xml의 SQL을 읽어서 실행</span>
+<span class="ann">@Mapper</span>
+<span class="kw">public interface</span> <span class="type">PostMapper</span> {
+    List&lt;PostDto&gt; findAll();
+
+    PostDto findById(Long id);
+
+    <span class="kw">void</span> insert(PostDto post);
+
+    <span class="kw">void</span> update(PostDto post);
+
+    <span class="kw">void</span> delete(Long id);
+
+    <span class="cm">// 페이지네이션: offset = page * size, limit = size</span>
+    List&lt;PostDto&gt; findPage(<span class="ann">@Param</span>(<span class="str">"offset"</span>) <span class="kw">int</span> offset, <span class="ann">@Param</span>(<span class="str">"limit"</span>) <span class="kw">int</span> limit);
+
+    <span class="kw">int</span> count();
+}</pre>
+
+<div class="lbl">src/main/resources/mapper/PostMapper.xml</div>
+<pre>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd"&gt;
+
+&lt;mapper namespace="com.madayV2.blog.mapper.PostMapper"&gt;
+
+    &lt;select id="findAll" resultType="PostDto"&gt;
+        SELECT id, title, content, category, author,
+               created_at, updated_at
+        FROM posts
+        ORDER BY created_at DESC
+    &lt;/select&gt;
+
+    &lt;select id="findById" parameterType="Long" resultType="PostDto"&gt;
+        SELECT * FROM posts WHERE id = #{id}
+    &lt;/select&gt;
+
+    &lt;insert id="insert" parameterType="PostDto"&gt;
+        INSERT INTO posts (title, content, category, author)
+        VALUES (#{title}, #{content}, #{category}, #{author})
+    &lt;/insert&gt;
+
+    &lt;update id="update" parameterType="PostDto"&gt;
+        UPDATE posts
+        SET title = #{title},
+            content = #{content},
+            category = #{category},
+            updated_at = SYSDATE
+        WHERE id = #{id}
+    &lt;/update&gt;
+
+    &lt;delete id="delete" parameterType="Long"&gt;
+        DELETE FROM posts WHERE id = #{id}
+    &lt;/delete&gt;
+
+    &lt;select id="findPage" resultType="PostDto"&gt;
+        SELECT id, title, content, category, author, created_at, updated_at
+        FROM posts ORDER BY created_at DESC
+        OFFSET #{offset} ROWS FETCH NEXT #{limit} ROWS ONLY
+    &lt;/select&gt;
+
+    &lt;select id="count" resultType="int"&gt;
+        SELECT COUNT(*) FROM posts
+    &lt;/select&gt;
+
+&lt;/mapper&gt;</pre>
+
+<div class="box yel">
+  <strong>namespace</strong> — 이 XML이 어떤 @Mapper 인터페이스와 연결되는지 지정. 정확히 일치해야 함.<br>
+  <strong>resultType="PostDto"</strong> — mybatis.type-aliases-package 설정으로 전체 경로 생략 가능.<br>
+  <strong>#{}</strong> — PreparedStatement 파라미터 바인딩 → SQL 인젝션 방지. 항상 ${}가 아닌 #{}를 써야 함.<br>
+  <strong>Oracle OFFSET/FETCH</strong> — Oracle 12c+ 표준 페이지네이션 문법. ROWNUM 방식보다 간결.
+</div>
+</div>
+
+<hr>
+
+<!-- 7 -->
+<div id="service">
+<h2>7. PostService</h2>
+<div class="lbl">src/main/java/com/madayV2/blog/service/PostService.java</div>
+<pre><span class="kw">package</span> com.madayV2.blog.service;
+
+<span class="kw">import</span> java.util.List;
+<span class="kw">import</span> org.springframework.stereotype.Service;
+<span class="kw">import</span> com.madayV2.blog.dto.PostDto;
+<span class="kw">import</span> com.madayV2.blog.mapper.PostMapper;
+<span class="kw">import</span> lombok.RequiredArgsConstructor;
+
+<span class="cm">// @RequiredArgsConstructor: final 필드의 생성자를 자동 생성 (스프링 권장 DI 방식)</span>
+<span class="ann">@Service</span>
+<span class="ann">@RequiredArgsConstructor</span>
+<span class="kw">public class</span> <span class="type">PostService</span> {
+    <span class="kw">private final</span> PostMapper postMapper;
+
+    <span class="kw">public</span> List&lt;PostDto&gt; getAll() {
+        <span class="kw">return</span> postMapper.findAll();
+    }
+
+    <span class="kw">public</span> PostDto getById(Long id) {
+        <span class="kw">return</span> postMapper.findById(id);
+    }
+
+    <span class="kw">public void</span> create(PostDto post) {
+        postMapper.insert(post);
+    }
+
+    <span class="kw">public void</span> modify(PostDto post) {
+        postMapper.update(post);
+    }
+
+    <span class="kw">public void</span> remove(Long id) {
+        postMapper.delete(id);
+    }
+
+    <span class="cm">// page는 0부터 시작 → offset = page * size</span>
+    <span class="kw">public</span> List&lt;PostDto&gt; getPage(<span class="kw">int</span> page, <span class="kw">int</span> size) {
+        <span class="kw">return</span> postMapper.findPage(page * size, size);
+    }
+
+    <span class="kw">public int</span> getTotalPages(<span class="kw">int</span> size) {
+        <span class="kw">int</span> total = postMapper.count();
+        <span class="kw">return</span> (<span class="kw">int</span>) Math.ceil((<span class="kw">double</span>) total / size);
+    }
+}</pre>
+
+<div class="box">
+  <strong>@RequiredArgsConstructor vs @Autowired</strong><br>
+  @Autowired 필드 주입은 스프링 공식 문서에서 권장하지 않음. 테스트 시 모킹이 어렵고 순환 의존 감지가 늦음.<br>
+  @RequiredArgsConstructor + final 필드 = 생성자 주입 방식. Spring이 권장하는 표준 패턴.
+</div>
+</div>
+
+<hr>
+
+<!-- 8 -->
+<div id="postcontroller">
+<h2>8. PostController</h2>
+<div class="lbl">src/main/java/com/madayV2/blog/controller/PostController.java</div>
+<pre><span class="kw">package</span> com.madayV2.blog.controller;
+
+<span class="kw">import</span> java.util.List;
+<span class="kw">import</span> java.security.Principal;
+<span class="kw">import</span> org.springframework.stereotype.Controller;
+<span class="kw">import</span> org.springframework.ui.Model;
+<span class="kw">import</span> org.springframework.web.bind.annotation.*;
+<span class="kw">import</span> com.madayV2.blog.dto.PostDto;
+<span class="kw">import</span> com.madayV2.blog.service.PostService;
+<span class="kw">import</span> lombok.RequiredArgsConstructor;
+
+<span class="ann">@Controller</span>
+<span class="ann">@RequiredArgsConstructor</span>
+<span class="ann">@RequestMapping</span>(<span class="str">"/posts"</span>)
+<span class="kw">public class</span> <span class="type">PostController</span> {
+
+    <span class="kw">private final</span> PostService postService;
+
+    <span class="cm">// GET /posts → templates/posts/list.html</span>
+    <span class="ann">@GetMapping</span>
+    <span class="kw">public</span> String list(Model model) {
+        List&lt;PostDto&gt; posts = postService.getAll();
+        model.addAttribute(<span class="str">"posts"</span>, posts);
+        <span class="kw">return</span> <span class="str">"posts/list"</span>;
+    }
+
+    <span class="cm">// GET /posts/{id} → templates/posts/detail.html</span>
+    <span class="ann">@GetMapping</span>(<span class="str">"/{id}"</span>)
+    <span class="kw">public</span> String detail(<span class="ann">@PathVariable</span> Long id, Model model) {
+        model.addAttribute(<span class="str">"post"</span>, postService.getById(id));
+        <span class="kw">return</span> <span class="str">"posts/detail"</span>;
+    }
+
+    <span class="cm">// GET /posts/{id}/data → JSON 반환 (대시보드 모달 Ajax용)</span>
+    <span class="ann">@GetMapping</span>(<span class="str">"/{id}/data"</span>)
+    <span class="ann">@ResponseBody</span>
+    <span class="kw">public</span> PostDto data(<span class="ann">@PathVariable</span> Long id) {
+        <span class="kw">return</span> postService.getById(id);
+    }
+
+    <span class="cm">// GET /posts/write → 글 작성 폼</span>
+    <span class="ann">@GetMapping</span>(<span class="str">"/write"</span>)
+    <span class="kw">public</span> String writeForm(Model model) {
+        model.addAttribute(<span class="str">"post"</span>, <span class="kw">new</span> PostDto());
+        <span class="kw">return</span> <span class="str">"posts/write"</span>;
+    }
+
+    <span class="cm">// POST /posts/write → DB 저장 후 목록으로 redirect (PRG 패턴)</span>
+    <span class="ann">@PostMapping</span>(<span class="str">"/write"</span>)
+    <span class="kw">public</span> String write(<span class="ann">@ModelAttribute</span> PostDto post, Principal principal) {
+        post.setAuthor(principal.getName()); <span class="cm">// 로그인 유저명 세팅</span>
+        postService.create(post);
+        <span class="kw">return</span> <span class="str">"redirect:/posts"</span>;
+    }
+
+    <span class="cm">// GET /posts/edit/{id} → 글 수정 폼</span>
+    <span class="ann">@GetMapping</span>(<span class="str">"/edit/{id}"</span>)
+    <span class="kw">public</span> String editForm(<span class="ann">@PathVariable</span> Long id, Model model) {
+        model.addAttribute(<span class="str">"post"</span>, postService.getById(id));
+        <span class="kw">return</span> <span class="str">"posts/edit"</span>;
+    }
+
+    <span class="cm">// POST /posts/edit/{id} → 수정 저장</span>
+    <span class="ann">@PostMapping</span>(<span class="str">"/edit/{id}"</span>)
+    <span class="kw">public</span> String edit(<span class="ann">@PathVariable</span> Long id, <span class="ann">@ModelAttribute</span> PostDto post) {
+        post.setId(id);
+        postService.modify(post);
+        <span class="kw">return</span> <span class="str">"redirect:/posts"</span>;
+    }
+
+    <span class="cm">// POST /posts/delete/{id} → 삭제</span>
+    <span class="ann">@PostMapping</span>(<span class="str">"/delete/{id}"</span>)
+    <span class="kw">public</span> String delete(<span class="ann">@PathVariable</span> Long id) {
+        postService.remove(id);
+        <span class="kw">return</span> <span class="str">"redirect:/posts"</span>;
+    }
+}</pre>
+
+<table>
+  <tr><th>HTTP</th><th>경로</th><th>설명</th><th>인증</th></tr>
+  <tr><td>GET</td><td>/posts</td><td>목록 조회</td><td>누구나</td></tr>
+  <tr><td>GET</td><td>/posts/{id}</td><td>상세 조회</td><td>누구나</td></tr>
+  <tr><td>GET</td><td>/posts/{id}/data</td><td>JSON 반환 (Ajax)</td><td>누구나</td></tr>
+  <tr><td>GET</td><td>/posts/write</td><td>작성 폼</td><td>로그인 필요</td></tr>
+  <tr><td>POST</td><td>/posts/write</td><td>저장</td><td>로그인 필요</td></tr>
+  <tr><td>GET</td><td>/posts/edit/{id}</td><td>수정 폼</td><td>로그인 필요</td></tr>
+  <tr><td>POST</td><td>/posts/edit/{id}</td><td>수정 저장</td><td>로그인 필요</td></tr>
+  <tr><td>POST</td><td>/posts/delete/{id}</td><td>삭제</td><td>로그인 필요</td></tr>
+</table>
+</div>
+
+<hr>
+
+<!-- 9 -->
+<div id="dashboard">
+<h2>9. DashboardController</h2>
+<div class="lbl">src/main/java/com/madayV2/blog/controller/DashboardController.java</div>
+<pre><span class="kw">package</span> com.madayV2.blog.controller;
+
+<span class="kw">import</span> java.util.Map;
+<span class="kw">import</span> org.springframework.stereotype.Controller;
+<span class="kw">import</span> org.springframework.ui.Model;
+<span class="kw">import</span> org.springframework.web.bind.annotation.*;
+<span class="kw">import</span> com.madayV2.blog.service.PostService;
+<span class="kw">import</span> com.madayV2.blog.service.SqlService;
+<span class="kw">import</span> lombok.RequiredArgsConstructor;
+
+<span class="ann">@Controller</span>
+<span class="ann">@RequiredArgsConstructor</span>
+<span class="kw">public class</span> <span class="type">DashboardController</span> {
+    <span class="kw">private final</span> PostService postService;
+    <span class="kw">private final</span> SqlService sqlService;
+
+    <span class="cm">// GET / → 대시보드 (페이지네이션 포함)</span>
+    <span class="ann">@GetMapping</span>(<span class="str">"/"</span>)
+    <span class="kw">public</span> String dashboard(Model model,
+            <span class="ann">@RequestParam</span>(defaultValue = <span class="str">"0"</span>) <span class="kw">int</span> page) {
+        <span class="kw">int</span> size = 8;
+        model.addAttribute(<span class="str">"posts"</span>, postService.getPage(page, size));
+        model.addAttribute(<span class="str">"totalPages"</span>, postService.getTotalPages(size));
+        model.addAttribute(<span class="str">"currentPage"</span>, page);
+        <span class="kw">return</span> <span class="str">"dashboard"</span>; <span class="cm">// templates/dashboard.html</span>
+    }
+
+    <span class="cm">// POST /sql/execute → SQL 콘솔 실행 결과 JSON 반환</span>
+    <span class="ann">@PostMapping</span>(<span class="str">"/sql/execute"</span>)
+    <span class="ann">@ResponseBody</span>
+    <span class="kw">public</span> Map&lt;String, Object&gt; execute(<span class="ann">@RequestBody</span> Map&lt;String, String&gt; body) {
+        <span class="kw">try</span> {
+            <span class="kw">return</span> sqlService.execute(body.get(<span class="str">"sql"</span>));
+        } <span class="kw">catch</span> (Exception e) {
+            <span class="kw">return</span> Map.of(<span class="str">"type"</span>, <span class="str">"error"</span>, <span class="str">"message"</span>, e.getMessage());
+        }
+    }
+}</pre>
+
+<div class="box">
+  <strong>페이지네이션 흐름</strong><br>
+  GET /?page=0 → postService.getPage(0, 8) → findPage(offset=0, limit=8)<br>
+  GET /?page=1 → postService.getPage(1, 8) → findPage(offset=8, limit=8)<br>
+  totalPages = Math.ceil(전체건수 / 8)
+</div>
+</div>
+
+<hr>
+
+<!-- 10 -->
+<div id="globaladvice">
+<h2>10. GlobalModelAdvice</h2>
+<div class="lbl">src/main/java/com/madayV2/blog/config/GlobalModelAdvice.java</div>
+<pre><span class="kw">package</span> com.madayV2.blog.config;
+
+<span class="kw">import</span> jakarta.servlet.http.HttpServletRequest;
+<span class="kw">import</span> org.springframework.web.bind.annotation.ControllerAdvice;
+<span class="kw">import</span> org.springframework.web.bind.annotation.ModelAttribute;
+
+<span class="ann">@ControllerAdvice</span>
+<span class="kw">public class</span> <span class="type">GlobalModelAdvice</span> {
+
+    <span class="ann">@ModelAttribute</span>(<span class="str">"ctx"</span>)
+    <span class="kw">public</span> String contextPath(HttpServletRequest request) {
+        <span class="kw">return</span> request.getContextPath();
+    }
+}</pre>
+
+<div class="box">
+  <strong>ctx 주입 이유</strong><br>
+  context-path=/v2 설정 때문에 JS에서 fetch URL을 만들 때 접두사가 필요함.<br>
+  <code>@ControllerAdvice</code> + <code>@ModelAttribute("ctx")</code> → 모든 템플릿에서 <code>${ctx}</code>로 접근 가능.<br>
+  Thymeleaf inline JavaScript에서 <code>const contextPath = /*[[${ctx}]]*/ '';</code> 로 JS에 주입.<br>
+  예: fetch(`${contextPath}/posts/${id}/data`) → 실제로 /v2/posts/1/data 로 요청됨.
+</div>
+</div>
+
+<hr>
+
+<!-- 11 -->
+<div id="auth">
+<h2>11. AuthController</h2>
+<div class="lbl">src/main/java/com/madayV2/blog/controller/AuthController.java</div>
+<pre><span class="kw">package</span> com.madayV2.blog.controller;
+
+<span class="kw">import</span> org.springframework.stereotype.Controller;
+<span class="kw">import</span> org.springframework.web.bind.annotation.GetMapping;
+
+<span class="ann">@Controller</span>
+<span class="kw">public class</span> <span class="type">AuthController</span> {
+
+    <span class="ann">@GetMapping</span>(<span class="str">"/login"</span>)
+    <span class="kw">public</span> String login() {
+        <span class="kw">return</span> <span class="str">"login"</span>;  <span class="cm">// templates/login.html</span>
+    }
+}</pre>
+
+<div class="box">
+  SecurityConfig에서 <code>.loginPage("/login")</code>으로 커스텀 로그인 페이지를 지정.<br>
+  실제 로그인 POST 처리(username/password 검증)는 Spring Security가 담당 — AuthController에는 불필요.<br>
+  @RequiredArgsConstructor 불필요 (주입받는 빈 없음).
+</div>
+</div>
+
+<hr>
+
+<!-- 12 -->
+<div id="security">
+<h2>12. SecurityConfig</h2>
+<div class="lbl">src/main/java/com/madayV2/blog/config/SecurityConfig.java</div>
+<pre><span class="kw">package</span> com.madayV2.blog.config;
+
+<span class="kw">import</span> org.springframework.context.annotation.Bean;
+<span class="kw">import</span> org.springframework.context.annotation.Configuration;
+<span class="kw">import</span> org.springframework.security.config.annotation.web.builders.HttpSecurity;
+<span class="kw">import</span> org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+<span class="kw">import</span> org.springframework.security.core.userdetails.User;
+<span class="kw">import</span> org.springframework.security.core.userdetails.UserDetailsService;
+<span class="kw">import</span> org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+<span class="kw">import</span> org.springframework.security.crypto.password.PasswordEncoder;
+<span class="kw">import</span> org.springframework.security.provisioning.InMemoryUserDetailsManager;
+<span class="kw">import</span> org.springframework.security.web.SecurityFilterChain;
+<span class="kw">import</span> org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+<span class="ann">@Configuration</span>
+<span class="ann">@EnableWebSecurity</span>
+<span class="kw">public class</span> <span class="type">SecurityConfig</span> {
+
+    <span class="ann">@Bean</span>
+    <span class="kw">public</span> SecurityFilterChain filterChain(HttpSecurity http) <span class="kw">throws</span> Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                <span class="cm">// 누구나 접근 가능한 경로</span>
+                .requestMatchers(<span class="str">"/"</span>, <span class="str">"/posts"</span>, <span class="str">"/posts/{id}"</span>, <span class="str">"/posts/{id}/data"</span>).permitAll()
+                .requestMatchers(<span class="str">"/css/**"</span>).permitAll()
+                <span class="cm">// SQL 콘솔은 인증 필요</span>
+                .requestMatchers(<span class="str">"/sql/**"</span>).authenticated()
+                <span class="cm">// 나머지 (write, edit, delete 등) 모두 인증 필요</span>
+                .anyRequest().authenticated()
+            )
+            .formLogin(form -> form
+                .loginPage(<span class="str">"/login"</span>)
+                .defaultSuccessUrl(<span class="str">"/"</span>, <span class="kw">true</span>)
+                .permitAll()
+            )
+            .exceptionHandling(ex -> ex
+                <span class="cm">// /sql/** 비인증 Ajax 요청 → 로그인 페이지 redirect 대신 401 직접 반환</span>
+                .defaultAuthenticationEntryPointFor(
+                    (req, res, e) -> res.sendError(401, <span class="str">"Unauthorized"</span>),
+                    <span class="kw">new</span> AntPathRequestMatcher(<span class="str">"/sql/**"</span>)
+                )
+            )
+            .logout(logout -> logout.logoutSuccessUrl(<span class="str">"/"</span>).permitAll());
+        <span class="kw">return</span> http.build();
+    }
+
+    <span class="ann">@Bean</span>
+    <span class="kw">public</span> UserDetailsService userDetailsService() {
+        <span class="cm">// InMemoryUserDetailsManager: DB 없이 메모리에 유저 저장</span>
+        <span class="kw">var</span> user = User.builder()
+            .username(<span class="str">"admin"</span>)
+            .password(passwordEncoder().encode(<span class="str">"admin1234"</span>))
+            .roles(<span class="str">"ADMIN"</span>)
+            .build();
+        <span class="kw">return new</span> InMemoryUserDetailsManager(user);
+    }
+
+    <span class="ann">@Bean</span>
+    <span class="kw">public</span> PasswordEncoder passwordEncoder() {
+        <span class="kw">return new</span> BCryptPasswordEncoder();  <span class="cm">// 단방향 해시 (복호화 불가)</span>
+    }
+}</pre>
+
+<table>
+  <tr><th>경로</th><th>접근 권한</th></tr>
+  <tr><td>/</td><td>누구나 (permitAll)</td></tr>
+  <tr><td>/posts</td><td>누구나 (permitAll)</td></tr>
+  <tr><td>/posts/{id}</td><td>누구나 (permitAll)</td></tr>
+  <tr><td>/posts/{id}/data</td><td>누구나 (permitAll)</td></tr>
+  <tr><td>/css/**</td><td>누구나 (permitAll)</td></tr>
+  <tr><td>/sql/**</td><td>인증 필요 (비인증 Ajax 요청 → 401)</td></tr>
+  <tr><td>/login</td><td>누구나 (formLogin.permitAll)</td></tr>
+  <tr><td>그 외 모든 경로</td><td>인증 필요 (anyRequest().authenticated)</td></tr>
+</table>
+
+<div class="box red">
+  <strong>로그인 계정</strong>: username=admin / password=admin1234<br>
+  비밀번호는 BCryptPasswordEncoder로 인코딩되어 메모리에 저장됨.
+</div>
+</div>
+
+<hr>
+
+<!-- 13 -->
+<div id="sqlservice">
+<h2>13. SqlService</h2>
+<div class="lbl">src/main/java/com/madayV2/blog/service/SqlService.java</div>
+<pre><span class="kw">package</span> com.madayV2.blog.service;
+
+<span class="kw">import</span> java.util.List;
+<span class="kw">import</span> java.util.Map;
+<span class="kw">import</span> org.springframework.jdbc.core.JdbcTemplate;
+<span class="kw">import</span> org.springframework.stereotype.Service;
+<span class="kw">import</span> lombok.RequiredArgsConstructor;
+
+<span class="ann">@Service</span>
+<span class="ann">@RequiredArgsConstructor</span>
+<span class="kw">public class</span> <span class="type">SqlService</span> {
+    <span class="cm">// JdbcTemplate: Spring 제공 JDBC 헬퍼</span>
+    <span class="cm">// 커넥션 열기/닫기, 예외 변환(SQLException → DataAccessException) 자동 처리</span>
+    <span class="kw">private final</span> JdbcTemplate jdbcTemplate;
+
+    <span class="kw">public</span> Map&lt;String, Object&gt; execute(String sql) {
+        String upper = sql.trim().toUpperCase();
+
+        <span class="cm">// 조회 쿼리: SELECT, SHOW, DESC(RIBE), WITH (CTE)</span>
+        <span class="kw">if</span> (upper.startsWith(<span class="str">"SELECT"</span>) || upper.startsWith(<span class="str">"SHOW"</span>)
+                || upper.startsWith(<span class="str">"DESC"</span>) || upper.startsWith(<span class="str">"WITH"</span>)) {
+            <span class="cm">// queryForList: 결과 → List&lt;Map&lt;컬럼명, 값&gt;&gt;</span>
+            List&lt;Map&lt;String, Object&gt;&gt; rows = jdbcTemplate.queryForList(sql.trim());
+            <span class="kw">return</span> Map.of(<span class="str">"type"</span>, <span class="str">"select"</span>, <span class="str">"rows"</span>, rows, <span class="str">"count"</span>, rows.size());
+
+        } <span class="kw">else if</span> (upper.startsWith(<span class="str">"INSERT"</span>) || upper.startsWith(<span class="str">"UPDATE"</span>)
+                || upper.startsWith(<span class="str">"DELETE"</span>)) {
+            <span class="cm">// update(): DML 실행, 영향받은 행 수 반환</span>
+            <span class="kw">int</span> affected = jdbcTemplate.update(sql.trim());
+            <span class="kw">return</span> Map.of(<span class="str">"type"</span>, <span class="str">"dml"</span>, <span class="str">"affected"</span>, affected);
+
+        } <span class="kw">else</span> {
+            <span class="cm">// execute(): CREATE TABLE, DROP, ALTER 등 DDL</span>
+            jdbcTemplate.execute(sql.trim());
+            <span class="kw">return</span> Map.of(<span class="str">"type"</span>, <span class="str">"ddl"</span>, <span class="str">"message"</span>, <span class="str">"실행 완료"</span>);
+        }
+    }
+}</pre>
+
+<table>
+  <tr><th>SQL 시작 키워드</th><th>처리 방식</th><th>반환 JSON</th></tr>
+  <tr><td>SELECT, SHOW, DESC, WITH</td><td>queryForList()</td><td>{"type":"select","rows":[...],"count":N}</td></tr>
+  <tr><td>INSERT, UPDATE, DELETE</td><td>update()</td><td>{"type":"dml","affected":N}</td></tr>
+  <tr><td>CREATE, DROP, ALTER 등</td><td>execute()</td><td>{"type":"ddl","message":"실행 완료"}</td></tr>
+  <tr><td>예외 발생 시</td><td>DashboardController catch 처리</td><td>{"type":"error","message":"..."}</td></tr>
+</table>
+</div>
+
+<hr>
+
+<!-- 14 -->
+<div id="thymeleaf">
+<h2>14. Thymeleaf 핵심 문법</h2>
+
+<table>
+  <tr><th>문법</th><th>설명</th><th>예시</th></tr>
+  <tr><td>th:text</td><td>텍스트 출력 (XSS 자동 이스케이프)</td><td><code>th:text="${post.title}"</code></td></tr>
+  <tr><td>th:each</td><td>반복</td><td><code>th:each="post : ${posts}"</code></td></tr>
+  <tr><td>th:href</td><td>URL 동적 생성</td><td><code>th:href="@{/posts/{id}(id=${post.id})}"</code></td></tr>
+  <tr><td>th:action</td><td>폼 action + CSRF 토큰 자동 포함</td><td><code>th:action="@{/posts/write}"</code></td></tr>
+  <tr><td>th:if / th:unless</td><td>조건부 렌더링</td><td><code>th:if="${totalPages > 1}"</code></td></tr>
+  <tr><td>th:classappend</td><td>클래스 동적 추가</td><td><code>th:classappend="${i==currentPage} ? 'active'"</code></td></tr>
+  <tr><td>th:data-*</td><td>data 속성 동적 지정</td><td><code>th:data-id="${post.id}"</code></td></tr>
+  <tr><td>sec:authorize</td><td>Spring Security 권한 확인</td><td><code>sec:authorize="isAuthenticated()"</code></td></tr>
+  <tr><td>th:inline="javascript"</td><td>Java 변수를 JS 변수로 주입</td><td><code>const ctx = /*[[${ctx}]]*/</code></td></tr>
+</table>
+
+<h3>대시보드 핵심 Thymeleaf 예시</h3>
+<pre><span class="cm">&lt;!-- 인증 여부에 따라 버튼 분기 --&gt;</span>
+&lt;a th:href="@{/posts/write}" sec:authorize="isAuthenticated()"&gt;WRITE&lt;/a&gt;
+&lt;a th:href="@{/login}"       sec:authorize="!isAuthenticated()"&gt;LOGIN&lt;/a&gt;
+
+<span class="cm">&lt;!-- 게시물 목록 반복 + data-id로 Ajax 모달 연동 --&gt;</span>
+&lt;li th:each="post : ${posts}"&gt;
+    &lt;a class="post-link"
+       th:text="${post.title}"
+       th:data-id="${post.id}"&gt;&lt;/a&gt;
+    &lt;span th:text="${post.category}"&gt;&lt;/span&gt;
+&lt;/li&gt;
+
+<span class="cm">&lt;!-- 페이지네이션 --&gt;</span>
+&lt;div th:if="${totalPages > 1}"&gt;
+    &lt;a th:href="@{/(page=${currentPage - 1})}"
+       th:classappend="${currentPage == 0} ? 'disabled'"&gt;&amp;lt;&lt;/a&gt;
+
+    &lt;a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+       th:text="${i + 1}"
+       th:classappend="${i == currentPage} ? 'active'"
+       th:href="@{/(page=${i})}"&gt;&lt;/a&gt;
+
+    &lt;a th:href="@{/(page=${currentPage + 1})}"
+       th:classappend="${currentPage == totalPages - 1} ? 'disabled'"&gt;&amp;gt;&lt;/a&gt;
+&lt;/div&gt;
+
+<span class="cm">&lt;!-- Thymeleaf inline JavaScript — ctx(context-path), CSRF 토큰 주입 --&gt;</span>
+&lt;script th:inline="javascript"&gt;
+    const isAuth      = /*[[${#authorization.expression('isAuthenticated()')}]]*/ false;
+    const csrfToken   = /*[[${_csrf.token}]]*/ '';
+    const csrfHeader  = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
+    const contextPath = /*[[${ctx}]]*/ '';  <span class="cm">// GlobalModelAdvice가 주입한 /v2</span>
+&lt;/script&gt;</pre>
+
+<div class="box">
+  <strong>th:onclick 금지 (Thymeleaf 3.1+)</strong><br>
+  Thymeleaf 3.1부터 th:onclick에 문자열 변수 삽입 금지 — 보안 정책 강화.<br>
+  대신: <code>th:data-id="${post.id}"</code> + <code>addEventListener('click', ...)</code>로 처리.
+</div>
+</div>
+
+<hr>
+
+<!-- 15 -->
+<div id="docker">
+<h2>15. Docker 설정</h2>
+<div class="lbl">/home/ubuntu/java-blog/docker-compose.yml</div>
+<pre>services:
+
+    oracle:
+        image: gvenzl/oracle-free:23-slim  <span class="cm"># ARM 호환 Oracle 이미지</span>
+        container_name: javablog_oracle
+        restart: always
+        environment:
+            - ORACLE_PASSWORD=Blog1234!
+            - ORACLE_DATABASE=BLOGDB
+        ports:
+            - "127.0.0.1:1521:1521"        <span class="cm"># 로컬호스트만 바인딩 → 외부 직접 접근 차단</span>
+        volumes:
+            - oracle_data:/opt/oracle/oradata
+        networks:
+            - javablog_network
+
+    app:
+        build:
+            context: ./app
+            dockerfile: Dockerfile
+        container_name: javablog_app
+        restart: always
+        environment:
+            - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle:1521/FREEPDB1
+            <span class="cm"># 컨테이너명 'oracle'이 Docker DNS hostname으로 작동</span>
+            - SPRING_DATASOURCE_USERNAME=bloguser
+            - SPRING_DATASOURCE_PASSWORD=Blog1234!
+        ports:
+            - "127.0.0.1:8080:8080"        <span class="cm"># 호스트 로컬만 바인딩, Nginx가 프록시</span>
+        depends_on:
+            - oracle
+        networks:
+            - javablog_network
+            - mablog_network               <span class="cm"># Nginx(mablog_proxy)와 통신하기 위한 외부 네트워크</span>
+
+volumes:
+    oracle_data:
+
+networks:
+  javablog_network:
+    driver: bridge
+  mablog_network:
+    external: true
+    name: mam_mablog_network              <span class="cm"># Nginx 네트워크 (외부에서 미리 생성된 것 참조)</span></pre>
+
+<table>
+  <tr><th>설정 방식</th><th>호스트 외부 접근</th><th>Docker 내부 접근</th></tr>
+  <tr><td>ports: "80:80"</td><td>가능 (모든 IP)</td><td>가능</td></tr>
+  <tr><td>ports: "127.0.0.1:1521:1521"</td><td>불가 (로컬호스트만)</td><td>가능</td></tr>
+  <tr><td>ports: "127.0.0.1:8080:8080"</td><td>불가 (로컬호스트만)</td><td>가능</td></tr>
+</table>
+
+<div class="box">
+  <strong>네트워크 구성</strong><br>
+  javablog_network — oracle &lt;→ app 내부 통신<br>
+  mablog_network (external: true) — Nginx(mablog_proxy) &lt;→ app 통신<br>
+  Nginx가 javablog_app에 접근하려면 같은 Docker 네트워크에 있어야 함.<br>
+  GitHub Actions에서 <code>docker network connect mam_mablog_network javablog_app</code>로 수동 연결.
+</div>
+</div>
+
+<hr>
+
+<!-- 16 -->
+<div id="dockerfile">
+<h2>16. Dockerfile (멀티스테이지 빌드)</h2>
+<div class="lbl">/home/ubuntu/java-blog/app/Dockerfile</div>
+<pre><span class="cm"># Stage 1: 빌드</span>
+<span class="kw">FROM</span> eclipse-temurin:21-jdk-jammy <span class="kw">AS</span> builder
+<span class="kw">WORKDIR</span> /app
+<span class="kw">COPY</span> .mvn/ .mvn/
+<span class="kw">COPY</span> mvnw pom.xml ./
+<span class="cm"># 의존성 먼저 다운로드 (레이어 캐시 활용 — 소스 변경 없으면 재다운로드 생략)</span>
+<span class="kw">RUN</span> chmod +x mvnw && ./mvnw dependency:go-offline -B
+<span class="kw">COPY</span> src/ src/
+<span class="kw">RUN</span> ./mvnw clean package -DskipTests -B
+
+<span class="cm"># Stage 2: 실행 (JRE만 포함 → 이미지 크기 최소화)</span>
+<span class="kw">FROM</span> eclipse-temurin:21-jre-jammy
+<span class="kw">WORKDIR</span> /app
+<span class="cm"># 빌드 스테이지의 JAR만 복사 (소스코드, Maven, JDK 제외)</span>
+<span class="kw">COPY</span> --from=builder /app/target/*.jar app.jar
+<span class="kw">EXPOSE</span> 8080
+<span class="kw">ENTRYPOINT</span> ["java", "-jar", "app.jar"]</pre>
+
+<div class="box">
+  <strong>멀티스테이지 빌드 장점</strong><br>
+  Stage 1 (builder): JDK + Maven + 소스코드 포함 — JAR 생성 후 이 스테이지는 최종 이미지에서 제외.<br>
+  Stage 2: JRE + JAR만 포함 → 최종 이미지 크기 대폭 감소 (보안 공격 면적 축소).<br>
+  eclipse-temurin: Adoptium 공식 OpenJDK. jammy = Ubuntu 22.04 기반.
+</div>
+</div>
+
+<hr>
+
+<!-- 17 -->
+<div id="cicd">
+<h2>17. GitHub Actions deploy.yml</h2>
+<div class="lbl">/home/ubuntu/java-blog/app/.github/workflows/deploy.yml</div>
+<pre>name: Deploy to OCI
+
+on:
+    push:
+        branches: [main]  <span class="cm"># main에 push될 때 자동 실행</span>
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Deploy via SSH
+              uses: appleboy/ssh-action@v1
+              with:
+                  host: 129.154.55.20
+                  username: ubuntu
+                  key: ${{ secrets.OCI_SSH_KEY }}
+                  script: |
+                      cd /home/ubuntu/java-blog/app
+                      git pull origin main
+                      cd /home/ubuntu/java-blog
+                      docker-compose build app       <span class="cm"># docker-compose V1 (하이픈 있음)</span>
+                      docker-compose up -d
+                      docker network connect mam_mablog_network javablog_app || true
+                      <span class="cm"># || true: 이미 연결된 경우 에러 무시</span></pre>
+
+<div class="box">
+  <strong>왜 서버에서 직접 빌드?</strong><br>
+  GitHub Actions runner: x86_64 아키텍처. OCI 서버: ARM (aarch64).<br>
+  x86에서 빌드한 Docker 이미지는 ARM에서 실행 불가 (아키텍처 불일치).<br>
+  → CI에서는 SSH로 서버에 접속만 하고, 실제 docker 빌드는 ARM 서버에서 수행.
+</div>
+
+<div class="box yel">
+  <strong>docker-compose V1 vs V2</strong><br>
+  이 프로젝트는 <code>docker-compose</code> (하이픈 있음, V1 단독 설치) 사용.<br>
+  V2는 <code>docker compose</code> (하이픈 없음, Docker CLI 플러그인 방식).<br>
+  서버에 설치된 버전에 맞게 스크립트 작성 필요.
+</div>
+
+<div class="flow">
+개발자 → git push origin main
+  ↓
+GitHub → push 이벤트 감지 → Actions Runner (ubuntu-latest, x86_64) 실행
+  ↓
+appleboy/ssh-action → OCI 서버 SSH 접속 (secrets.OCI_SSH_KEY)
+  ↓
+OCI ARM 서버 (129.154.55.20):
+  cd /home/ubuntu/java-blog/app
+  git pull origin main              ← 최신 소스 코드 반영
+  cd /home/ubuntu/java-blog
+  docker-compose build app          ← ARM에서 Maven 빌드 + Docker 이미지 생성
+  docker-compose up -d              ← 새 컨테이너로 교체 (재시작)
+  docker network connect ... || true ← Nginx 네트워크 연결 (이미 연결이면 무시)
+  ↓
+새 버전 서비스 시작</div>
+</div>
+
+</div>
+</body>
+</html>

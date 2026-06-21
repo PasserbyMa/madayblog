@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DB — 데이터베이스 종합 가이드</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d0d0d; color:#c9d1d9; font-family:'Courier New',monospace; font-size:14px; line-height:1.75; padding:40px 20px 80px; }
+.wrap { max-width:900px; margin:0 auto; }
+h1 { color:#00ff41; font-size:1.8rem; text-align:center; padding:30px 0 6px; text-shadow:0 0 8px #00ff41; }
+.sub { color:#8b949e; text-align:center; margin-bottom:40px; font-size:0.85rem; }
+.toc { background:#161b22; border:1px solid #00ff41; border-radius:6px; padding:18px 24px; margin-bottom:40px; }
+.toc h2 { color:#00ff41; margin-bottom:10px; font-size:0.9rem; }
+.toc a { color:#58a6ff; text-decoration:none; display:block; padding:2px 0; font-size:0.85rem; }
+.toc a:hover { color:#00ff41; }
+h2 { color:#00ff41; font-size:1.1rem; border-bottom:2px solid #00ff41; padding-bottom:6px; margin:40px 0 16px; }
+h3 { color:#58a6ff; font-size:0.95rem; margin:20px 0 8px; }
+p { margin-bottom:10px; }
+ul { padding-left:22px; margin-bottom:12px; }
+li { margin-bottom:4px; }
+pre { background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:14px; overflow-x:auto; margin:10px 0 18px; font-size:0.82rem; line-height:1.65; }
+table { width:100%; border-collapse:collapse; margin:10px 0 18px; font-size:0.85rem; }
+th { background:#1f2937; color:#00ff41; padding:8px 10px; text-align:left; }
+td { padding:7px 10px; border-bottom:1px solid #21262d; }
+tr:nth-child(even) td { background:#161b22; }
+.box { background:#161b22; border-left:3px solid #00ff41; padding:12px 16px; margin:12px 0; border-radius:0 4px 4px 0; font-size:0.87rem; }
+.box.yel { border-color:#f0e68c; }
+.box.blue { border-color:#58a6ff; }
+.kw { color:#ff7b72; }
+.cm { color:#8b949e; font-style:italic; }
+.str { color:#a5d6ff; }
+hr { border:none; border-top:1px solid #21262d; margin:30px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>DB — 데이터베이스 종합</h1>
+<p class="sub">Oracle · MySQL · MariaDB · MongoDB · DynamoDB · 고급 SQL · 트랜잭션 · 인덱스</p>
+
+<div class="toc">
+  <h2>목차</h2>
+  <a href="#compare">1. DB 종류 비교 (SQL vs NoSQL)</a>
+  <a href="#oracle">2. Oracle SQL 핵심</a>
+  <a href="#mysql">3. MySQL / MariaDB SQL (기초 · DDL · Spring Boot 설정)</a>
+  <a href="#advanced">4. 고급 SQL (서브쿼리 / GROUP BY+HAVING / 윈도우함수 / CTE)</a>
+  <a href="#index">5. 인덱스 전략</a>
+  <a href="#transaction">6. 트랜잭션 & ACID</a>
+  <a href="#mongodb">7. MongoDB CRUD & Aggregate</a>
+  <a href="#dynamodb">8. DynamoDB 구조 & 쿼리</a>
+</div>
+
+<!-- 1 -->
+<div id="compare">
+<h2>1. DB 종류 비교</h2>
+
+<table>
+  <tr><th></th><th>Oracle</th><th>MySQL</th><th>MariaDB</th><th>PostgreSQL</th><th>MongoDB</th><th>DynamoDB</th></tr>
+  <tr><td>종류</td><td>관계형(RDB)</td><td>관계형</td><td>관계형</td><td>관계형</td><td>NoSQL(문서)</td><td>NoSQL(K-V/문서)</td></tr>
+  <tr><td>라이선스</td><td>상용(유료)</td><td>오픈소스</td><td>완전 오픈</td><td>완전 오픈</td><td>오픈소스</td><td>AWS 완전관리형</td></tr>
+  <tr><td>주요 사용처</td><td>금융/공공/대기업</td><td>스타트업/웹</td><td>MySQL 대체</td><td>클라우드/스타트업</td><td>로그/콘텐츠</td><td>AWS 서버리스</td></tr>
+  <tr><td>윈도우함수/CTE</td><td>12c 이상</td><td>8.0 이상</td><td>10.2 이상</td><td>지원</td><td>aggregate로 유사</td><td>미지원</td></tr>
+  <tr><td>Spring JDBC URL</td><td>jdbc:oracle:thin:@host:1521/PDB</td><td>jdbc:mysql://host:3306/db</td><td>jdbc:mariadb://host:3306/db</td><td>jdbc:postgresql://host:5432/db</td><td>mongodb://host:27017</td><td>SDK 사용</td></tr>
+  <tr><td>페이징 문법</td><td>OFFSET n ROWS FETCH NEXT n ROWS ONLY</td><td>LIMIT n OFFSET n</td><td>LIMIT n, n</td><td>LIMIT n OFFSET n</td><td>skip().limit()</td><td>ExclusiveStartKey</td></tr>
+</table>
+
+<h3>SQL vs NoSQL 핵심 차이</h3>
+<pre>           SQL (Oracle, MySQL, MariaDB)     NoSQL (MongoDB, DynamoDB)
+구조        테이블 + 행 + 열                  문서, K-V, 컬럼 패밀리 등
+스키마      고정 (미리 테이블 정의)            유연 (컬럼 없거나 문서마다 달라도 됨)
+관계        JOIN으로 연결                      보통 비정규화 (JOIN 없이 저장)
+트랜잭션    ACID 완벽 지원                    기본 제한적 (MongoDB는 최근 지원)
+언제 쓰나   데이터 정합성 중요, 복잡한 관계    대용량, 빠른 읽기쓰기, 유연한 스키마</pre>
+</div>
+
+<hr>
+
+<!-- 2 -->
+<div id="oracle">
+<h2>2. Oracle SQL 핵심</h2>
+
+<h3>기본 조회 & 페이징</h3>
+<pre><span class="cm">-- 기본 조회</span>
+SELECT name, salary, department
+FROM employees
+WHERE department = '개발팀'
+ORDER BY salary DESC;
+
+<span class="cm">-- 페이징 (Oracle 12c 이상)</span>
+SELECT * FROM posts
+ORDER BY created_at DESC
+OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;   <span class="cm">-- 1~10번째</span>
+OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY;  <span class="cm">-- 11~20번째</span>
+
+<span class="cm">-- 페이징 (Oracle 11g 이하 — ROWNUM 방식)</span>
+SELECT * FROM (
+  SELECT ROWNUM rn, e.*
+  FROM employees e
+  WHERE ROWNUM &lt;= 20
+)
+WHERE rn &gt;= 11;  <span class="cm">-- 11~20번째</span>
+
+<span class="cm">-- 현재 유저 / 테이블 목록</span>
+SELECT USER FROM dual;
+SELECT table_name FROM user_tables;</pre>
+
+<h3>Oracle 전용 함수</h3>
+<pre><span class="cm">-- NVL: NULL이면 대체값 반환 (MySQL의 IFNULL)</span>
+SELECT NVL(salary, 0) FROM employees;
+SELECT NVL(category, '미분류') FROM posts;
+
+<span class="cm">-- DECODE: 조건 분기 (CASE WHEN 단순 버전)</span>
+SELECT DECODE(grade, 'A', '우수', 'B', '보통', '기타') FROM students;
+
+<span class="cm">-- TO_DATE / TO_CHAR: 날짜 변환</span>
+SELECT * FROM orders WHERE order_date &gt;= TO_DATE('2024-01-01', 'YYYY-MM-DD');
+SELECT TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') FROM dual;
+
+<span class="cm">-- SUBSTR: 문자열 자르기</span>
+SELECT SUBSTR('홍길동', 1, 1) FROM dual;  <span class="cm">-- '홍'</span>
+
+<span class="cm">-- CASE WHEN</span>
+SELECT name,
+  CASE
+    WHEN salary &gt;= 5000000 THEN '고액'
+    WHEN salary &gt;= 3000000 THEN '중간'
+    ELSE '일반'
+  END AS salary_grade
+FROM employees;</pre>
+
+<h3>Oracle JOIN</h3>
+<pre><span class="cm">-- INNER JOIN: 양쪽 다 있는 것만</span>
+SELECT u.name, o.product, o.amount
+FROM users u
+INNER JOIN orders o ON u.id = o.user_id;
+
+<span class="cm">-- LEFT JOIN: 왼쪽 전부 + 오른쪽은 있으면 포함 (없으면 NULL)</span>
+SELECT u.name, o.product
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id;
+
+<span class="cm">-- 3테이블 JOIN</span>
+SELECT u.name, o.product, p.price
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+LEFT JOIN products p ON o.product_id = p.id;</pre>
+
+<h3>Oracle GROUP BY + HAVING</h3>
+<pre><span class="cm">-- 부서별 인원수, 평균 급여 (300만 이상 부서만)</span>
+SELECT department, COUNT(*) AS cnt, AVG(salary) AS avg_sal
+FROM employees
+WHERE status = 'Y'            <span class="cm">-- GROUP BY 전 필터 (재직자만)</span>
+GROUP BY department
+HAVING AVG(salary) &gt;= 3000000 <span class="cm">-- GROUP BY 후 필터 (집계 결과에 조건)</span>
+ORDER BY avg_sal DESC;</pre>
+
+<h3>Oracle 시퀀스 (AUTO_INCREMENT 대체)</h3>
+<pre><span class="cm">-- 시퀀스 생성</span>
+CREATE SEQUENCE posts_seq START WITH 1 INCREMENT BY 1 NOCACHE;
+
+<span class="cm">-- 테이블에 적용 (Oracle 12c+)</span>
+CREATE TABLE posts (
+    id NUMBER DEFAULT posts_seq.NEXTVAL PRIMARY KEY,
+    ...
+);
+
+<span class="cm">-- 현재 시퀀스 값 확인</span>
+SELECT posts_seq.CURRVAL FROM dual;</pre>
+</div>
+
+<hr>
+
+<!-- 3 -->
+<div id="mysql">
+<h2>3. MySQL / MariaDB SQL 기초</h2>
+
+<h3>MySQL vs Oracle 문법 차이</h3>
+<table>
+  <tr><th>기능</th><th>MySQL / MariaDB</th><th>Oracle</th></tr>
+  <tr><td>페이징</td><td>LIMIT 10 OFFSET 0</td><td>OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY</td></tr>
+  <tr><td>자동 증가</td><td>AUTO_INCREMENT</td><td>SEQUENCE + DEFAULT NEXTVAL</td></tr>
+  <tr><td>현재 시각</td><td>NOW() / CURRENT_TIMESTAMP</td><td>SYSDATE</td></tr>
+  <tr><td>NULL 대체</td><td>IFNULL(val, 0)</td><td>NVL(val, 0)</td></tr>
+  <tr><td>날짜 포맷</td><td>DATE_FORMAT(dt, '%Y-%m-%d')</td><td>TO_CHAR(dt, 'YYYY-MM-DD')</td></tr>
+  <tr><td>문자열 연결</td><td>CONCAT('a', 'b')</td><td>'a' || 'b'</td></tr>
+  <tr><td>테이블 목록</td><td>SHOW TABLES</td><td>SELECT table_name FROM user_tables</td></tr>
+</table>
+
+<h3>MySQL 기본 CRUD</h3>
+<pre><span class="cm">-- 조회</span>
+SELECT * FROM member WHERE status = 'ACTIVE' ORDER BY created_at DESC;
+
+<span class="cm">-- 페이징 (page=1, size=10 → OFFSET = page*size)</span>
+SELECT * FROM member ORDER BY created_at DESC LIMIT 10 OFFSET 10;
+<span class="cm">-- 또는 LIMIT offset, count 형식</span>
+SELECT * FROM member LIMIT 10, 10;
+
+<span class="cm">-- 삽입</span>
+INSERT INTO member (name, email, phone, status)
+VALUES ('홍길동', 'hong@test.com', '010-1234-5678', 'ACTIVE');
+
+<span class="cm">-- 수정</span>
+UPDATE member SET name='홍길동', updated_at=NOW() WHERE id=1;
+
+<span class="cm">-- 삭제</span>
+DELETE FROM member WHERE id=1;
+
+<span class="cm">-- 테이블 구조 확인</span>
+DESC member;
+SHOW CREATE TABLE member;</pre>
+
+<h3>JOIN 예시 (MySQL)</h3>
+<pre><span class="cm">-- INNER JOIN: 가입현황(subscription) + 고객(member) + 요금제(plan)</span>
+SELECT m.name, p.plan_name, p.monthly_fee, s.status, s.start_date
+FROM subscription s
+JOIN member m ON s.member_id = m.id
+JOIN plan   p ON s.plan_id   = p.id
+WHERE s.status = 'ACTIVE'
+ORDER BY s.start_date DESC;
+
+<span class="cm">-- LEFT JOIN: 가입 안 한 고객도 포함</span>
+SELECT m.name, s.status
+FROM member m
+LEFT JOIN subscription s ON m.id = s.member_id;</pre>
+
+<h3>MySQL 테이블 생성 (DDL)</h3>
+<pre><span class="cm">-- 데이터베이스 생성 & 선택</span>
+CREATE DATABASE v3db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE v3db;
+
+<span class="cm">-- AUTO_INCREMENT, 외래키, 제약조건</span>
+CREATE TABLE member (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(50)  NOT NULL,
+    email      VARCHAR(100) NOT NULL UNIQUE,
+    phone      VARCHAR(20),
+    birth_date DATE,
+    status     VARCHAR(10)  NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE plan (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    plan_name   VARCHAR(50)  NOT NULL,
+    monthly_fee INT          NOT NULL,
+    description VARCHAR(200)
+);
+
+CREATE TABLE subscription (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    member_id  BIGINT NOT NULL,
+    plan_id    BIGINT NOT NULL,
+    status     VARCHAR(10) DEFAULT 'ACTIVE',
+    start_date DATE,
+    FOREIGN KEY (member_id) REFERENCES member(id),
+    FOREIGN KEY (plan_id)   REFERENCES plan(id)
+);
+
+<span class="cm">-- 초기 데이터 삽입 (INSERT IGNORE: 중복 시 에러 무시 → 재실행 가능)</span>
+INSERT IGNORE INTO plan (id, plan_name, monthly_fee) VALUES
+    (1, 'Basic',    9900),
+    (2, 'Standard', 14900),
+    (3, 'Premium',  19900);
+
+<span class="cm">-- ON DUPLICATE KEY UPDATE: 중복이면 업데이트, 없으면 삽입</span>
+INSERT INTO member (email, name, status)
+VALUES ('hong@test.com', '홍길동', 'ACTIVE')
+ON DUPLICATE KEY UPDATE name='홍길동', status='ACTIVE';</pre>
+
+<h3>MySQL 주요 데이터 타입</h3>
+<table>
+  <tr><th>타입</th><th>설명</th><th>예시</th></tr>
+  <tr><td>INT / BIGINT</td><td>정수 (BIGINT: PK에 권장)</td><td>id BIGINT AUTO_INCREMENT</td></tr>
+  <tr><td>VARCHAR(n)</td><td>가변 길이 문자열</td><td>name VARCHAR(50)</td></tr>
+  <tr><td>TEXT / LONGTEXT</td><td>긴 텍스트</td><td>content TEXT</td></tr>
+  <tr><td>DATE</td><td>날짜 (YYYY-MM-DD)</td><td>birth_date DATE</td></tr>
+  <tr><td>DATETIME</td><td>날짜+시간</td><td>created_at DATETIME</td></tr>
+  <tr><td>DECIMAL(p,s)</td><td>정밀한 소수 (금액)</td><td>price DECIMAL(10,2)</td></tr>
+  <tr><td>BOOLEAN / TINYINT(1)</td><td>true/false</td><td>is_active BOOLEAN</td></tr>
+</table>
+
+<h3>Spring Boot application.properties — MySQL 설정</h3>
+<pre><span class="cm"># MySQL 기본 연결</span>
+spring.datasource.url=jdbc:mysql://localhost:3306/v3db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+spring.datasource.username=v3user
+spring.datasource.password=V3Pass!
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+<span class="cm"># MyBatis</span>
+mybatis.mapper-locations=classpath:mapper/*.xml
+mybatis.type-aliases-package=com.example.model
+mybatis.configuration.map-underscore-to-camel-case=true  <span class="cm"># created_at → createdAt 자동</span>
+
+<span class="cm"># 앱 시작 시 schema.sql 실행 (INSERT IGNORE로 멱등성 보장)</span>
+spring.sql.init.mode=always
+spring.sql.init.schema-locations=classpath:schema.sql
+
+<span class="cm"># HikariCP 커넥션 풀 (기본값)</span>
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.connection-timeout=30000</pre>
+
+<h3>MariaDB 연결 (MySQL과 드라이버만 다름)</h3>
+<pre><span class="cm"># MariaDB</span>
+spring.datasource.url=jdbc:mariadb://localhost:3306/practicedb
+spring.datasource.driver-class-name=org.mariadb.jdbc.Driver
+<span class="cm"># 나머지 문법은 MySQL과 동일</span></pre>
+</div>
+
+<hr>
+
+<!-- 4 -->
+<div id="advanced">
+<h2>4. 고급 SQL (서브쿼리 / GROUP BY+HAVING / 윈도우함수 / CTE)</h2>
+
+<h3>서브쿼리 (Subquery)</h3>
+<pre><span class="cm">-- 평균보다 비싼 요금제에 가입한 고객</span>
+SELECT name, email FROM member
+WHERE id IN (
+    SELECT member_id FROM subscription s
+    JOIN plan p ON s.plan_id = p.id
+    WHERE p.monthly_fee &gt; (SELECT AVG(monthly_fee) FROM plan)
+);
+
+<span class="cm">-- NOT EXISTS: 가입이 없는 고객 조회</span>
+SELECT name FROM member m
+WHERE NOT EXISTS (
+    SELECT 1 FROM subscription s WHERE s.member_id = m.id
+);
+
+<span class="cm">-- 도서관 테마: 평균 가격보다 비싼 책</span>
+SELECT title, price FROM book
+WHERE price &gt; (SELECT AVG(price) FROM book);</pre>
+
+<div class="box yel">
+  <strong>IN vs EXISTS 차이</strong><br>
+  IN: 서브쿼리 결과를 전부 메모리에 올림. 결과 집합이 클 때 느림.<br>
+  EXISTS: 일치하는 행 하나만 찾으면 즉시 종료(early termination). 대용량에서 더 빠름.
+</div>
+
+<h3>GROUP BY + HAVING</h3>
+<pre><span class="cm">-- 요금제별 가입자 수, 2명 이상인 것만</span>
+SELECT p.plan_name, COUNT(*) AS subscriber_count
+FROM subscription s
+JOIN plan p ON s.plan_id = p.id
+GROUP BY p.plan_name
+HAVING subscriber_count &gt;= 2
+ORDER BY subscriber_count DESC;
+
+<span class="cm">-- 부서별 평균 급여 300만 이상</span>
+SELECT department, COUNT(*) AS cnt, AVG(salary) AS avg_sal
+FROM employees
+WHERE status = 'Y'             <span class="cm">-- WHERE: 행 단위 필터 (GROUP BY 전)</span>
+GROUP BY department
+HAVING AVG(salary) &gt;= 3000000 <span class="cm">-- HAVING: 그룹 단위 필터 (GROUP BY 후)</span>
+ORDER BY avg_sal DESC;
+
+<span class="cm">-- 도서관 테마: 저자별 판매액 집계</span>
+SELECT a.name, COUNT(*) AS book_count, SUM(b.price * o.quantity) AS total_sales
+FROM orders o
+JOIN book b ON o.book_id = b.id
+JOIN author a ON b.author_id = a.id
+GROUP BY a.name
+HAVING total_sales &gt; 20000
+ORDER BY total_sales DESC;</pre>
+
+<div class="box">
+  <strong>WHERE vs HAVING</strong><br>
+  WHERE — GROUP BY 이전에 행 필터링 (집계 함수 사용 불가)<br>
+  HAVING — GROUP BY 이후에 그룹 필터링 (COUNT, SUM 등 집계 함수 사용 가능)
+</div>
+
+<h3>윈도우 함수 (Window Function)</h3>
+<pre><span class="cm">-- 요금제별 월정액 + 전체 대비 순위</span>
+SELECT m.name, p.plan_name, p.monthly_fee,
+       RANK() OVER (ORDER BY p.monthly_fee DESC) AS fee_rank
+FROM subscription s
+JOIN member m ON s.member_id = m.id
+JOIN plan p ON s.plan_id = p.id;
+
+<span class="cm">-- 독자별 지출 합계 + 순위 (도서관 테마)</span>
+SELECT r.name, SUM(b.price * o.quantity) AS spent,
+       RANK() OVER (ORDER BY SUM(b.price * o.quantity) DESC) AS rnk
+FROM orders o
+JOIN reader r ON o.reader_id = r.id
+JOIN book b ON o.book_id = b.id
+GROUP BY r.name;
+
+<span class="cm">-- 전체 대비 비율</span>
+SELECT plan_name, cnt,
+       ROUND(cnt * 100.0 / SUM(cnt) OVER (), 1) AS pct
+FROM (SELECT plan_name, COUNT(*) AS cnt
+      FROM subscription JOIN plan ON subscription.plan_id = plan.id
+      GROUP BY plan_name) sub;</pre>
+
+<table>
+  <tr><th>함수</th><th>설명</th><th>예시</th></tr>
+  <tr><td>RANK()</td><td>순위 (동순위 있으면 번호 건너뜀 1,1,3)</td><td>RANK() OVER (ORDER BY salary DESC)</td></tr>
+  <tr><td>DENSE_RANK()</td><td>순위 (동순위도 연속 1,1,2)</td><td>DENSE_RANK() OVER (ORDER BY score DESC)</td></tr>
+  <tr><td>ROW_NUMBER()</td><td>고유 순번 (동순위도 각각 다른 번호)</td><td>ROW_NUMBER() OVER (ORDER BY id)</td></tr>
+  <tr><td>SUM() OVER ()</td><td>전체 합을 각 행에 붙임</td><td>SUM(cnt) OVER ()</td></tr>
+  <tr><td>SUM() OVER (PARTITION BY)</td><td>그룹별 합을 각 행에 붙임</td><td>SUM(salary) OVER (PARTITION BY dept)</td></tr>
+  <tr><td>LAG(col, n)</td><td>n번째 이전 행 값</td><td>LAG(salary, 1) OVER (ORDER BY id)</td></tr>
+  <tr><td>LEAD(col, n)</td><td>n번째 다음 행 값</td><td>LEAD(salary, 1) OVER (ORDER BY id)</td></tr>
+</table>
+
+<div class="box yel">
+  <strong>GROUP BY vs 윈도우 함수 차이</strong><br>
+  GROUP BY: 행을 합쳐서 수를 줄임 (n개 → 그룹 수).<br>
+  윈도우 함수: 행 수는 그대로 유지하면서 집계값을 각 행에 추가.
+</div>
+
+<h3>CTE (Common Table Expression — WITH 절)</h3>
+<pre><span class="cm">-- 기본 CTE: 서브쿼리를 이름 붙인 임시 결과로 분리</span>
+WITH plan_revenue AS (
+    SELECT p.plan_name, SUM(p.monthly_fee) AS revenue
+    FROM subscription s
+    JOIN plan p ON s.plan_id = p.id
+    WHERE s.status = 'ACTIVE'
+    GROUP BY p.plan_name
+)
+SELECT * FROM plan_revenue ORDER BY revenue DESC;
+
+<span class="cm">-- 여러 CTE 연결</span>
+WITH
+  top_readers AS (
+      SELECT reader_id, SUM(b.price * o.quantity) AS spent
+      FROM orders o JOIN book b ON o.book_id = b.id
+      GROUP BY reader_id
+  ),
+  reader_info AS (
+      SELECT r.name, r.email, t.spent
+      FROM reader r JOIN top_readers t ON r.id = t.reader_id
+  )
+SELECT * FROM reader_info WHERE spent &gt; 50000 ORDER BY spent DESC;
+
+<span class="cm">-- 도서관 테마: 저자 매출 TOP</span>
+WITH author_sales AS (
+    SELECT a.name, SUM(b.price * o.quantity) AS total
+    FROM orders o
+    JOIN book b ON o.book_id = b.id
+    JOIN author a ON b.author_id = a.id
+    GROUP BY a.name
+)
+SELECT * FROM author_sales WHERE total &gt; 15000;</pre>
+
+<div class="box">
+  <strong>서브쿼리 vs CTE</strong><br>
+  기능은 같지만 CTE가 훨씬 읽기 쉬움. 같은 집계를 여러 번 참조할 때 CTE가 유리.<br>
+  지원: MariaDB 10.2+, MySQL 8.0+, Oracle 9i+, PostgreSQL 8.4+
+</div>
+
+<h3>전체 SELECT 실행 순서</h3>
+<pre>FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT
+
+FROM      테이블 선택
+JOIN      테이블 연결
+WHERE     행 단위 필터 (집계 함수 사용 불가)
+GROUP BY  그룹화
+HAVING    그룹 단위 필터 (집계 함수 사용 가능)
+SELECT    컬럼/집계 계산
+ORDER BY  정렬
+LIMIT     개수 제한</pre>
+</div>
+
+<hr>
+
+<!-- 5 -->
+<div id="index">
+<h2>5. 인덱스 전략</h2>
+
+<p>검색 속도를 높이는 자료구조. 책의 목차처럼 원하는 데이터 위치를 바로 찾아감.</p>
+
+<h3>기본 개념</h3>
+<table>
+  <tr><th>상황</th><th>전략</th></tr>
+  <tr><td>자주 조회하는 컬럼 (WHERE, JOIN ON)</td><td>단일 인덱스</td></tr>
+  <tr><td>복합 조건 (WHERE a=? AND b=?)</td><td>복합 인덱스 (선택도 높은 컬럼 먼저)</td></tr>
+  <tr><td>PK 컬럼</td><td>자동으로 클러스터드 인덱스 생성</td></tr>
+  <tr><td>INSERT/UPDATE/DELETE 많은 컬럼</td><td>인덱스 최소화 (인덱스 유지 비용)</td></tr>
+  <tr><td>카디널리티가 낮은 컬럼 (성별 등)</td><td>인덱스 효과 없음, 피하는 것이 좋음</td></tr>
+</table>
+
+<h3>인덱스 생성 & 확인</h3>
+<pre><span class="cm">-- 단일 인덱스</span>
+CREATE INDEX idx_member_email ON member(email);
+
+<span class="cm">-- 복합 인덱스 (자주 함께 조회되는 컬럼)</span>
+CREATE INDEX idx_subscription_member_status ON subscription(member_id, status);
+
+<span class="cm">-- 인덱스 사용 여부 확인 (EXPLAIN)</span>
+EXPLAIN SELECT * FROM member WHERE email = 'test@test.com';
+<span class="cm">-- key 컬럼에 idx_member_email이 나오면 인덱스 사용</span>
+<span class="cm">-- type이 'ALL'이면 전체 스캔 → 인덱스 없거나 효과 없음</span>
+
+<span class="cm">-- 인덱스 목록 확인</span>
+SHOW INDEX FROM member;
+
+<span class="cm">-- 인덱스 삭제</span>
+DROP INDEX idx_member_email ON member;</pre>
+
+<div class="box yel">
+  <strong>인덱스 단점</strong><br>
+  조회는 빠르지만 INSERT/UPDATE/DELETE 시 인덱스도 갱신해야 해서 쓰기가 느려짐.<br>
+  조회가 많은 컬럼에만 선별적으로 사용할 것.
+</div>
+</div>
+
+<hr>
+
+<!-- 6 -->
+<div id="transaction">
+<h2>6. 트랜잭션 & ACID</h2>
+
+<p>트랜잭션 = 여러 DB 작업을 하나의 단위로 묶음. 전부 성공하거나 전부 실패(롤백).</p>
+
+<h3>ACID</h3>
+<table>
+  <tr><th>속성</th><th>의미</th><th>예시</th></tr>
+  <tr><td>Atomicity (원자성)</td><td>전부 성공 or 전부 실패. 중간 없음.</td><td>이체: A -10만, B +10만 중 하나 실패 → 둘 다 취소</td></tr>
+  <tr><td>Consistency (일관성)</td><td>트랜잭션 전후 DB 규칙(제약조건) 항상 유지</td><td>외래키 제약조건 위반 시 커밋 불가</td></tr>
+  <tr><td>Isolation (격리성)</td><td>동시 실행 트랜잭션이 서로 영향 안 줌</td><td>A가 수정 중인 행을 B가 못 읽음</td></tr>
+  <tr><td>Durability (지속성)</td><td>커밋된 데이터는 장애가 나도 사라지지 않음</td><td>서버 다운돼도 커밋된 주문은 유지</td></tr>
+</table>
+
+<h3>MySQL 트랜잭션 SQL</h3>
+<pre><span class="cm">-- 명시적 트랜잭션</span>
+START TRANSACTION;
+
+UPDATE member SET status='INACTIVE' WHERE id=1;
+DELETE FROM subscription WHERE member_id=1;
+
+COMMIT;    <span class="cm">-- 성공 시 확정</span>
+ROLLBACK;  <span class="cm">-- 실패 시 취소 (START TRANSACTION 시점으로 되돌림)</span></pre>
+
+<h3>Spring @Transactional</h3>
+<pre><span class="cm">// @Transactional: AOP 프록시가 감싸서 메서드 실행 전 BEGIN, 이후 COMMIT/ROLLBACK</span>
+@Transactional
+public void deleteMemberWithSubscriptions(Long id) {
+    subscriptionMapper.deleteByMemberId(id);
+    memberMapper.delete(id);
+    <span class="cm">// 중간에 예외 발생 시 두 삭제 모두 ROLLBACK</span>
+}
+
+<span class="cm">// RuntimeException(unchecked) → 자동 롤백</span>
+<span class="cm">// Checked Exception → 기본적으로 롤백 안 됨 (rollbackFor 옵션으로 지정 가능)</span>
+@Transactional(rollbackFor = Exception.class)</pre>
+</div>
+
+<hr>
+
+<!-- 7 -->
+<div id="mongodb">
+<h2>7. MongoDB CRUD & Aggregate</h2>
+
+<h3>기본 구조</h3>
+<pre>SQL              MongoDB
+테이블(Table)  →  컬렉션(Collection)
+행(Row)        →  도큐먼트(Document)  {JSON 형태}
+컬럼(Column)   →  필드(Field)
+PRIMARY KEY    →  _id (자동 생성)</pre>
+
+<h3>기본 CRUD</h3>
+<pre><span class="cm">// 조회 (SELECT)</span>
+db.users.find({ age: { $gte: 20 } })           <span class="cm">// age >= 20</span>
+db.users.find({ name: "홍길동" }, { _id: 0 })  <span class="cm">// 특정 필드만 (projection)</span>
+db.users.findOne({ email: "test@test.com" })   <span class="cm">// 한 건만</span>
+
+<span class="cm">// 삽입 (INSERT)</span>
+db.users.insertOne({ name: "홍길동", age: 30, skills: ["Java", "Spring"] })
+db.users.insertMany([{ name: "A" }, { name: "B" }])
+
+<span class="cm">// 수정 (UPDATE)</span>
+db.users.updateOne(
+  { name: "홍길동" },
+  { $set: { age: 31 } }   <span class="cm">// $set: 특정 필드만 수정</span>
+)
+db.users.updateMany({ status: "inactive" }, { $set: { active: false } })
+
+<span class="cm">// 삭제 (DELETE)</span>
+db.users.deleteOne({ name: "홍길동" })
+db.users.deleteMany({ age: { $lt: 18 } })</pre>
+
+<h3>비교 연산자</h3>
+<pre>$eq  → 같음        { age: { $eq: 30 } }
+$ne  → 다름        { age: { $ne: 30 } }
+$gt  → 초과        { age: { $gt: 20 } }
+$gte → 이상        { age: { $gte: 20 } }
+$lt  → 미만        { age: { $lt: 30 } }
+$lte → 이하        { age: { $lte: 30 } }
+$in  → 포함        { age: { $in: [20, 30] } }
+$and → 그리고      { $and: [{ age: { $gte: 20 } }, { status: "active" }] }
+$or  → 또는        { $or: [{ age: 20 }, { age: 30 }] }</pre>
+
+<h3>Aggregate (집계 — GROUP BY 상당)</h3>
+<pre><span class="cm">// 부서별 평균 나이 (파이프라인 방식)</span>
+db.users.aggregate([
+    { $match: { status: "active" } },        <span class="cm">// WHERE (필터)</span>
+    { $group: {
+        _id: "$department",                  <span class="cm">// GROUP BY department</span>
+        avgAge: { $avg: "$age" },            <span class="cm">// AVG(age)</span>
+        count: { $sum: 1 }                   <span class="cm">// COUNT(*)</span>
+    }},
+    { $sort: { avgAge: -1 } },              <span class="cm">// ORDER BY avgAge DESC</span>
+    { $limit: 5 }                            <span class="cm">// LIMIT 5</span>
+]);
+
+<span class="cm">// 주요 집계 연산자</span>
+$sum   → 합계
+$avg   → 평균
+$min   → 최솟값
+$max   → 최댓값
+$count → 개수 (또는 $sum: 1)</pre>
+</div>
+
+<hr>
+
+<!-- 8 -->
+<div id="dynamodb">
+<h2>8. DynamoDB 구조 & 쿼리</h2>
+
+<h3>기본 구조</h3>
+<pre>테이블: users
+┌────────────────┬────────────┬──────────────┐
+│ userId (PK)    │ createdAt  │ name         │
+│ Partition Key  │ Sort Key   │              │
+├────────────────┼────────────┼──────────────┤
+│ user_001       │ 2024-01-01 │ 홍길동       │
+│ user_001       │ 2024-02-01 │ 홍길동       │  ← 같은 PK, 다른 SK
+│ user_002       │ 2024-01-15 │ 김철수       │
+└────────────────┴────────────┴──────────────┘
+
+Partition Key (필수): 데이터를 어느 서버에 저장할지 결정 (샤딩)
+Sort Key (선택): 같은 PK 안에서 정렬 / 범위 검색</pre>
+
+<h3>CRUD (AWS SDK v3)</h3>
+<pre>import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, PutCommand,
+         UpdateCommand, DeleteCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+
+const client = new DynamoDBClient({ region: "ap-northeast-2" });
+const db = DynamoDBDocumentClient.from(client);
+
+<span class="cm">// 조회 (PK로 정확히 한 건)</span>
+const { Item } = await db.send(new GetCommand({
+    TableName: "users",
+    Key: { userId: "user_001" }
+}));
+
+<span class="cm">// 삽입</span>
+await db.send(new PutCommand({
+    TableName: "users",
+    Item: { userId: "user_003", name: "이영희", age: 25 }
+}));
+
+<span class="cm">// 수정</span>
+await db.send(new UpdateCommand({
+    TableName: "users",
+    Key: { userId: "user_001" },
+    UpdateExpression: "SET #n = :name, age = :age",
+    ExpressionAttributeNames: { "#n": "name" },  <span class="cm">// 예약어 충돌 방지</span>
+    ExpressionAttributeValues: { ":name": "홍길동", ":age": 31 }
+}));
+
+<span class="cm">// 삭제</span>
+await db.send(new DeleteCommand({
+    TableName: "users",
+    Key: { userId: "user_003" }
+}));</pre>
+
+<h3>Query vs Scan</h3>
+<pre><span class="cm">// Query: Partition Key 기준 검색 (인덱스 사용 → 빠름) ← 실무에서 이것 써야 함</span>
+await db.send(new QueryCommand({
+    TableName: "orders",
+    KeyConditionExpression: "userId = :uid AND createdAt BETWEEN :start AND :end",
+    ExpressionAttributeValues: {
+        ":uid": "user_001",
+        ":start": "2024-01-01",
+        ":end": "2024-12-31"
+    }
+}));
+
+<span class="cm">// Scan: 테이블 전체 순회 (느림, 비용 많이 듦 → 최대한 피할 것)</span>
+await db.send(new ScanCommand({
+    TableName: "users",
+    FilterExpression: "age >= :age",
+    ExpressionAttributeValues: { ":age": 20 }
+}));</pre>
+
+<div class="box yel">
+  <strong>Query vs Scan 핵심 차이</strong><br>
+  Query = Partition Key 필수, 인덱스 사용 → 빠름, 비용 효율적.<br>
+  Scan = PK 없이도 되지만 전체 테이블 탐색 → 느림, 비용 많이 듦.
+</div>
+
+<h3>FilterExpression 연산자</h3>
+<pre>= , <> , < , <= , > , >=          비교
+BETWEEN :a AND :b                 범위
+begins_with(field, :val)          문자열 시작값
+contains(field, :val)             포함 여부
+attribute_exists(field)           필드 존재 여부
+attribute_not_exists(field)       필드 없음 여부
+AND , OR , NOT                    논리 연산
+
+FilterExpression: "age >= :age AND #s = :status"
+ExpressionAttributeNames:  { "#s": "status" }   <span class="cm">// 예약어 'status' 우회</span>
+ExpressionAttributeValues: { ":age": 20, ":status": "active" }</pre>
+</div>
+
+</div>
+</body>
+</html>

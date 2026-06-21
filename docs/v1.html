@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V1 — madayblog (Next.js)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d0d0d; color:#c9d1d9; font-family:'Courier New',monospace; font-size:14px; line-height:1.75; padding:40px 20px 80px; }
+.wrap { max-width:900px; margin:0 auto; }
+h1 { color:#00ff41; font-size:1.8rem; text-align:center; padding:30px 0 6px; text-shadow:0 0 8px #00ff41; }
+.sub { color:#8b949e; text-align:center; margin-bottom:40px; font-size:0.85rem; }
+.toc { background:#161b22; border:1px solid #00ff41; border-radius:6px; padding:18px 24px; margin-bottom:40px; }
+.toc h2 { color:#00ff41; margin-bottom:10px; font-size:0.9rem; }
+.toc a { color:#58a6ff; text-decoration:none; display:block; padding:2px 0; font-size:0.85rem; }
+.toc a:hover { color:#00ff41; }
+h2 { color:#00ff41; font-size:1.1rem; border-bottom:2px solid #00ff41; padding-bottom:6px; margin:40px 0 16px; }
+h3 { color:#58a6ff; font-size:0.95rem; margin:20px 0 8px; }
+p { margin-bottom:10px; }
+ul { padding-left:22px; margin-bottom:12px; }
+li { margin-bottom:4px; }
+pre { background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:14px; overflow-x:auto; margin:10px 0 18px; font-size:0.82rem; line-height:1.65; }
+table { width:100%; border-collapse:collapse; margin:10px 0 18px; font-size:0.85rem; }
+th { background:#1f2937; color:#00ff41; padding:8px 10px; text-align:left; }
+td { padding:7px 10px; border-bottom:1px solid #21262d; }
+tr:nth-child(even) td { background:#161b22; }
+.box { background:#161b22; border-left:3px solid #00ff41; padding:12px 16px; margin:12px 0; border-radius:0 4px 4px 0; font-size:0.87rem; }
+.box.yel { border-color:#f0e68c; }
+.box.blue { border-color:#58a6ff; }
+.cm { color:#8b949e; font-style:italic; }
+.kw { color:#ff7b72; }
+.str { color:#a5d6ff; }
+hr { border:none; border-top:1px solid #21262d; margin:30px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>V1 — madayblog</h1>
+<p class="sub">Next.js 16 · React 19 · TypeScript · MongoDB · GitHub OAuth · JWT</p>
+
+<div class="toc">
+  <h2>목차</h2>
+  <a href="#overview">1. 프로젝트 개요 & 기술 스택</a>
+  <a href="#structure">2. 폴더 구조</a>
+  <a href="#mongodb">3. MongoDB 연결 & 데이터 모델</a>
+  <a href="#auth">4. GitHub OAuth & JWT 세션</a>
+  <a href="#api">5. API 라우트 (CRUD)</a>
+  <a href="#page">6. 메인 페이지 구조 (SSR + CSR)</a>
+  <a href="#widgets">7. 대시보드 위젯</a>
+  <a href="#deploy">8. Docker & Nginx 배포</a>
+</div>
+
+<!-- 1 -->
+<div id="overview">
+<h2>1. 프로젝트 개요 & 기술 스택</h2>
+
+<p>개발 공부와 일상을 기록하는 개인 블로그. 터미널/CRT 스타일 대시보드 UI가 특징.</p>
+
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>프레임워크</td><td>Next.js 16 (App Router)</td></tr>
+  <tr><td>언어</td><td>TypeScript + React 19</td></tr>
+  <tr><td>DB</td><td>MongoDB (Mongoose)</td></tr>
+  <tr><td>인증</td><td>GitHub OAuth (직접 구현) + JWT (jose)</td></tr>
+  <tr><td>UI</td><td>MUI (@mui/material) + CSS Modules</td></tr>
+  <tr><td>서버 데이터</td><td>React Query (@tanstack/react-query v5)</td></tr>
+  <tr><td>마크다운</td><td>remark → rehype 파이프라인 + Prism.js 코드 하이라이팅</td></tr>
+  <tr><td>배포</td><td>Docker + Nginx (OCI ARM Ubuntu)</td></tr>
+</table>
+
+<h3>주요 기능</h3>
+<ul>
+  <li>블로그 포스트 CRUD (MongoDB 저장, Markdown 작성)</li>
+  <li>카테고리 필터 (hobby / error / study / algorithm)</li>
+  <li>제목/카테고리 실시간 검색 (debounce 300ms)</li>
+  <li>GitHub OAuth 로그인 (관리자만 글 쓰기/수정/삭제)</li>
+  <li>서버 대시보드 (시스템 상태, Docker 컨테이너, Nginx 로그, 방문자 통계)</li>
+  <li>AI 검색 요약 (EXAONE 4.0 / Ollama)</li>
+  <li>GitHub 활동 위젯, Raspberry Pi 상태, 앱 로그</li>
+</ul>
+
+<h3>대시보드 섹션 구성</h3>
+<table>
+  <tr><th>섹션</th><th>위젯</th></tr>
+  <tr><td>[BASE]</td><td>Clock, Recent Posts, Category Filter, GitHub Activity</td></tr>
+  <tr><td>[SERVER]</td><td>System Status, Docker Containers, Raspberry Pi, Nginx Log, Visitor Stats, App Log</td></tr>
+  <tr><td>[AI]</td><td>Search Summary (EXAONE 4.0), App Log</td></tr>
+</table>
+</div>
+
+<hr>
+
+<!-- 2 -->
+<div id="structure">
+<h2>2. 폴더 구조</h2>
+
+<pre>src/
+├── app/
+│   ├── (root)/
+│   │   ├── layout.tsx                ← 공통 레이아웃 (top/bottom)
+│   │   ├── page.tsx                  ← 메인 페이지 (SSR)
+│   │   └── post/[slug]/page.tsx      ← 포스트 상세 (slug 기반 라우팅)
+│   ├── api/
+│   │   ├── ConnectMongoDB.ts         ← MongoDB 연결 (글로벌 캐싱)
+│   │   ├── auth/
+│   │   │   ├── callback/github/route.ts  ← GitHub OAuth 콜백
+│   │   │   ├── login/route.ts            ← 로그인 (GitHub URL redirect)
+│   │   │   ├── logout/route.ts           ← 로그아웃 (쿠키 삭제)
+│   │   │   └── session/route.ts          ← 세션 확인
+│   │   ├── controller/
+│   │   │   ├── GET/                  ← 포스트/스택 조회
+│   │   │   ├── INSERT/               ← 포스트/스택 생성
+│   │   │   ├── UPDATE/               ← 포스트 수정
+│   │   │   └── DELETE/               ← 포스트/스택 삭제
+│   │   ├── models/
+│   │   │   ├── posts/model_posts.ts  ← posts 스키마
+│   │   │   └── stacks/model_stacks.ts← stacks 스키마
+│   │   ├── search-summary/route.ts   ← AI 검색 요약
+│   │   └── system/
+│   │       ├── server/route.ts       ← CPU/메모리/디스크 (systeminformation)
+│   │       ├── docker/route.ts       ← Docker 컨테이너 상태
+│   │       ├── nginx/route.ts        ← Nginx 로그 파싱
+│   │       ├── github/route.ts       ← GitHub 활동
+│   │       ├── raspberry/route.ts    ← Raspberry Pi 상태
+│   │       ├── visitor/route.ts      ← 방문자 통계
+│   │       └── applog/route.ts       ← Next.js 앱 로그
+│   └── component/
+│       ├── pageComponent/
+│       │   ├── main/                 ← 메인 대시보드 컴포넌트
+│       │   └── list/                 ← 포스트 목록/상세
+│       └── common/                   ← 공통 위젯 컴포넌트들
+└── lib/
+    └── auth/
+        ├── jwt.ts                    ← JWT 서명/검증 (jose)
+        └── getSession.ts             ← 쿠키에서 세션 추출</pre>
+</div>
+
+<hr>
+
+<!-- 3 -->
+<div id="mongodb">
+<h2>3. MongoDB 연결 & 데이터 모델</h2>
+
+<h3>ConnectMongoDB.ts — 글로벌 커넥션 캐싱</h3>
+<pre><span class="cm">// Next.js dev 모드는 HMR로 모듈이 재실행됨 → 커넥션이 계속 새로 생기는 문제 방지</span>
+<span class="cm">// globalThis에 캐싱해서 이미 연결된 경우 재사용</span>
+let cached = (globalThis as CustomGlobalThis).mongooseCache;
+if (!cached) cached = { conn: undefined, promise: undefined };
+
+export const ConnectMongoDB = async () => {
+    if (cached.conn?.connection.readyState === 1) return cached.conn;  <span class="cm">// 이미 연결됨</span>
+    if (cached.promise) return cached.promise;                         <span class="cm">// 연결 진행 중</span>
+
+    const opts = { bufferCommands: false, authSource: 'admin' };
+    cached.promise = mongoose.connect(MONGO_URI, opts);
+    cached.conn = await cached.promise;
+    return cached.conn;
+};</pre>
+
+<h3>posts 스키마</h3>
+<pre><span class="kw">const</span> postsSchema = <span class="kw">new</span> Schema({
+    title:    { type: String, required: true, trim: true },
+    content:  { type: String, required: true },   <span class="cm">// Markdown 원문 저장</span>
+    category: { type: String, required: true },   <span class="cm">// hobby/error/study/algorithm</span>
+    date:     { type: Date, default: Date.now },
+    slug:     { type: String, required: true, unique: true },  <span class="cm">// URL용 고유 식별자</span>
+}, { versionKey: false });
+
+<span class="cm">// 조회 시 Markdown → HTML 변환해서 contentHtml 필드 추가 후 반환</span>
+<span class="kw">type</span> IPostDataWithHtml = IPostData & { contentHtml: string };</pre>
+
+<h3>포스트 조회 (페이징 + 검색)</h3>
+<pre><span class="cm">// page: 1부터 시작, limit: 한 페이지당 개수, query: 검색어</span>
+export async function GetPostsAllData(page = 1, limit = 10, query = '') {
+    await ConnectMongoDB();
+
+    const filter = query
+        ? { $or: [
+            { title:    { $regex: query, $options: 'i' } },
+            { category: { $regex: query, $options: 'i' } },
+          ]}
+        : {};
+
+    const total = await ModelPostsSetting.countDocuments(filter);
+    const posts = await ModelPostsSetting.find(filter)
+        .sort({ date: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean();
+
+    <span class="cm">// Markdown → HTML 변환</span>
+    const returnArr = await Promise.all(
+        posts.map(async (p) => {
+            const { contentHtml } = await ConvertMarkdownToHtml(p.content);
+            return { ...p, _id: p._id.toString(), contentHtml };
+        })
+    );
+    return { posts: returnArr, total };
+}</pre>
+</div>
+
+<hr>
+
+<!-- 4 -->
+<div id="auth">
+<h2>4. GitHub OAuth & JWT 세션</h2>
+
+<h3>OAuth 흐름</h3>
+<pre>사용자 [로그인 클릭]
+    ↓
+GET /api/auth/login
+    ↓  GitHub OAuth URL로 redirect
+    └→ https://github.com/login/oauth/authorize?client_id=...&redirect_uri=...
+                ↓  사용자가 GitHub에서 허용
+GET /api/auth/callback/github?code=xxxxxx
+    ↓
+① code → access_token (GitHub API)
+    ↓
+② access_token → user info (https://api.github.com/user)
+    ↓
+③ isAdmin = (user.id === GIT_ADMIN_ID)
+    ↓
+④ JWT 서명 (jose, HS256, 7일 만료)
+    ↓
+⑤ Set-Cookie: ma_session=... (HttpOnly, Secure)
+    ↓
+메인 페이지로 redirect</pre>
+
+<h3>GitHub OAuth 콜백 코드</h3>
+<pre><span class="cm">// /api/auth/callback/github/route.ts</span>
+export async function GET(request: Request) {
+    const code = new URL(request.url).searchParams.get('code');
+
+    <span class="cm">// ① code → access_token</span>
+    const { access_token } = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id, client_secret, code }),
+    }).then(r => r.json());
+
+    <span class="cm">// ② access_token → user</span>
+    const user = await fetch('https://api.github.com/user', {
+        headers: { Authorization: `Bearer ${access_token}`, 'User-Agent': 'madayblog' },
+    }).then(r => r.json());
+
+    <span class="cm">// ③ JWT 발급 + 쿠키 설정</span>
+    const sessionToken = await signSession({
+        id: user.id,
+        name: user.name ?? user.login,
+        email: user.email ?? null,
+        image: user.avatar_url,
+        isAdmin: user.id === Number(process.env.GIT_ADMIN_ID),  <span class="cm">// 관리자 여부</span>
+    });
+
+    const cookie = `ma_session=${sessionToken}; HttpOnly; Secure; Path=/; Max-Age=${7*24*3600}; SameSite=Lax`;
+    return new Response(null, { status: 302, headers: { Location: '/', 'Set-Cookie': cookie } });
+}</pre>
+
+<h3>JWT 서명 / 검증 (jose)</h3>
+<pre><span class="cm">// lib/auth/jwt.ts</span>
+<span class="kw">const</span> secret = new TextEncoder().encode(process.env.AUTH_SECRET);
+
+<span class="cm">// 서명 (로그인 시)</span>
+export async function signSession(payload: SessionPayload): Promise&lt;string&gt; {
+    return new SignJWT({ ...payload })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setExpirationTime('7d')
+        .sign(secret);
+}
+
+<span class="cm">// 검증 (요청마다)</span>
+export async function verifySession(token: string): Promise&lt;SessionPayload&gt; {
+    const { payload } = await jwtVerify(token, secret);
+    return payload as SessionPayload;
+}</pre>
+
+<div class="box yel">
+  <strong>next-auth를 제거한 이유</strong><br>
+  next-auth v5 beta에서 OAuthCallback 에러가 반복 발생. 직접 GitHub OAuth 흐름을 구현해서 해결.<br>
+  code → access_token → user info → JWT 쿠키 전 과정을 직접 제어.
+</div>
+
+<h3>세션 인터페이스</h3>
+<pre><span class="kw">interface</span> SessionPayload {
+    id: number;
+    name: string;
+    email: string | null;
+    image: string;     <span class="cm">// GitHub 프로필 이미지 URL</span>
+    isAdmin: boolean;  <span class="cm">// GIT_ADMIN_ID와 일치 여부</span>
+}</pre>
+</div>
+
+<hr>
+
+<!-- 5 -->
+<div id="api">
+<h2>5. API 라우트 (CRUD)</h2>
+
+<h3>주요 엔드포인트</h3>
+<table>
+  <tr><th>메서드</th><th>경로</th><th>기능</th></tr>
+  <tr><td>GET</td><td>/api/controller/GET/posts?page=1&limit=10&query=</td><td>포스트 목록 (페이징 + 검색)</td></tr>
+  <tr><td>GET</td><td>/api/controller/GET/categories</td><td>카테고리별 포스트 수 집계</td></tr>
+  <tr><td>GET</td><td>/api/controller/GET/stack</td><td>기술 스택 전체 조회</td></tr>
+  <tr><td>POST</td><td>/api/controller/INSERT/posts</td><td>포스트 생성 (관리자만)</td></tr>
+  <tr><td>POST</td><td>/api/controller/INSERT/stack</td><td>스택 추가 (관리자만)</td></tr>
+  <tr><td>PUT</td><td>/api/controller/UPDATE</td><td>포스트 수정 (관리자만)</td></tr>
+  <tr><td>DELETE</td><td>/api/controller/DELETE/posts</td><td>포스트 삭제 (관리자만)</td></tr>
+  <tr><td>DELETE</td><td>/api/controller/DELETE/stack</td><td>스택 삭제 (관리자만)</td></tr>
+  <tr><td>GET</td><td>/api/auth/login</td><td>GitHub OAuth 시작</td></tr>
+  <tr><td>GET</td><td>/api/auth/callback/github</td><td>OAuth 콜백 → JWT 발급</td></tr>
+  <tr><td>GET</td><td>/api/auth/session</td><td>현재 세션 반환</td></tr>
+  <tr><td>POST</td><td>/api/auth/logout</td><td>쿠키 삭제</td></tr>
+  <tr><td>GET</td><td>/api/system/server</td><td>CPU/메모리/디스크 (systeminformation)</td></tr>
+  <tr><td>GET</td><td>/api/system/docker</td><td>Docker 컨테이너 상태</td></tr>
+  <tr><td>GET</td><td>/api/system/nginx</td><td>Nginx 로그 파싱</td></tr>
+  <tr><td>GET</td><td>/api/system/visitor</td><td>방문자 통계</td></tr>
+  <tr><td>POST</td><td>/api/search-summary</td><td>AI 검색 요약 (EXAONE)</td></tr>
+</table>
+
+<h3>클라이언트 apiClient.ts</h3>
+<pre><span class="cm">// src/app/lib/apiClient.ts — 클라이언트에서 API 호출하는 함수 모음</span>
+export const getPosts = async (page: number, limit: number, query = '') => {
+    const res = await fetch(`/api/controller/GET/posts?page=${page}&limit=${limit}&query=${query}`);
+    return res.json();
+};
+
+export const deletePost = async (id: string) => {
+    const res = await fetch('/api/controller/DELETE/posts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+    });
+    if (!res.ok) throw new Error('삭제 실패');
+};</pre>
+</div>
+
+<hr>
+
+<!-- 6 -->
+<div id="page">
+<h2>6. 메인 페이지 구조 (SSR + CSR)</h2>
+
+<h3>SSR + CSR 하이브리드</h3>
+<pre><span class="cm">// (root)/page.tsx — 서버 컴포넌트 (SSR)</span>
+const MainPage = async () => {
+    <span class="cm">// 서버에서 첫 10개 포스트 미리 조회 → HTML에 포함 → 초기 로딩 빠름</span>
+    const { posts, total } = await GetPostsAllData(1, 10);
+    const stackInfo = await GetStackAllData();
+    return &lt;MainPageComponent postData={posts} postTotal={total} stackData={stackInfo} /&gt;;
+};
+
+<span class="cm">// MainPageComponent — 클라이언트 컴포넌트 ('use client')</span>
+<span class="cm">// 페이지 변경/검색은 클라이언트에서 API 호출로 처리</span>
+const [p_data, setP_Data] = useState(postData);   <span class="cm">// SSR 데이터로 초기화</span>
+
+useEffect(() =&gt; {
+    const fetchPage = async () =&gt; {
+        const { posts, total } = await getPosts(curPage, perPage, searchQuery);
+        setP_Data(posts);
+    };
+    fetchPage();
+}, [curPage, perPage, searchQuery]);</pre>
+
+<h3>검색 debounce</h3>
+<pre><span class="cm">// 입력 후 300ms 대기 → 그때 searchQuery 반영 (API 호출 최소화)</span>
+useEffect(() =&gt; {
+    const timer = setTimeout(() =&gt; {
+        setSearchQuery(searchInput);
+        setCurPage(1);
+    }, 300);
+    return () =&gt; clearTimeout(timer);  <span class="cm">// 새 입력 오면 타이머 리셋</span>
+}, [searchInput]);</pre>
+
+<h3>모달 스택 시스템</h3>
+<pre><span class="cm">// 모달을 스택으로 관리 → 중첩 모달 지원 (more 위에 fix 열기 등)</span>
+<span class="kw">const</span> [modalStack, setModalStack] = useState&lt;ModalType[]&gt;([]);
+<span class="kw">const</span> activeModal = modalStack[modalStack.length - 1] ?? null;
+
+<span class="kw">const</span> openModal  = (type: ModalType) =&gt; setModalStack(prev =&gt; [...prev, type]);
+<span class="kw">const</span> closeModal = () =&gt; setModalStack(prev =&gt; prev.slice(0, -1));
+<span class="kw">const</span> closeAll   = () =&gt; setModalStack([]);
+
+<span class="cm">// 예: [more] → [more, fix] → fix 닫으면 → [more] 복귀</span></pre>
+
+<h3>페이지당 포스트 수 (반응형)</h3>
+<pre>const isMobile = useMediaQuery('(max-width: 768px)');
+const perPage  = isMobile ? 2 : 7;
+const totalPage = Math.ceil(total / perPage);</pre>
+
+<h3>포스트 상세 페이지 (slug 라우팅)</h3>
+<pre><span class="cm">// (root)/post/[slug]/page.tsx</span>
+<span class="cm">// /post/my-first-post 형태로 접근</span>
+const post = await GetPostBySlug(slug);
+<span class="cm">// 없으면 404, 있으면 contentHtml 렌더링</span></pre>
+</div>
+
+<hr>
+
+<!-- 7 -->
+<div id="widgets">
+<h2>7. 대시보드 위젯</h2>
+
+<table>
+  <tr><th>위젯</th><th>파일</th><th>데이터 소스</th></tr>
+  <tr><td>[CLOCK]</td><td>clockWidget.tsx</td><td>브라우저 Date (1초 갱신)</td></tr>
+  <tr><td>[RECENT_POSTS]</td><td>mainPageComponent.tsx</td><td>MongoDB (최신 5개)</td></tr>
+  <tr><td>[CATEGORY_FILTER]</td><td>categoryFilter.tsx</td><td>/api/controller/GET/categories</td></tr>
+  <tr><td>[GITHUB_ACTIVITY]</td><td>githubActivity.tsx</td><td>/api/system/github</td></tr>
+  <tr><td>[SYSTEM_STATUS]</td><td>getServerState.tsx</td><td>/api/system/server (systeminformation)</td></tr>
+  <tr><td>[DOCKER_CONTAINERS]</td><td>getDockerState.tsx</td><td>/api/system/docker</td></tr>
+  <tr><td>[RASPBERRY_PI]</td><td>raspberryStatus.tsx</td><td>/api/system/raspberry</td></tr>
+  <tr><td>[NGINX_LOG]</td><td>nginxLogWidget.tsx</td><td>/api/system/nginx (로그 파싱)</td></tr>
+  <tr><td>[VISITOR_STATS]</td><td>visitorStatsWidget.tsx</td><td>/api/system/visitor</td></tr>
+  <tr><td>[SEARCH_SUMMARY]</td><td>searchSummaryWidget.tsx</td><td>/api/search-summary (EXAONE 4.0)</td></tr>
+  <tr><td>[APP_LOG]</td><td>appLogWidget.tsx</td><td>/api/system/applog</td></tr>
+</table>
+
+<h3>모바일 탭 바</h3>
+<pre>isMobile (max-width: 768px) 일 때 탭으로 섹션 전환
+[Base]   → BASE 섹션 (포스트, 카테고리, GitHub)
+[Server] → SERVER 섹션 (시스템, Docker, Nginx, 방문자)
+[AI]     → AI 섹션 (검색 요약, 앱 로그)</pre>
+</div>
+
+<hr>
+
+<!-- 8 -->
+<div id="deploy">
+<h2>8. Docker & Nginx 배포</h2>
+
+<h3>docker-compose.yml 구성</h3>
+<pre>services:
+  app:          <span class="cm"># Next.js 앱</span>
+  mongodb:      <span class="cm"># MongoDB</span>
+  nginx:        <span class="cm"># 리버스 프록시 + HTTPS</span>
+  kafka:        <span class="cm"># 이벤트 스트리밍</span>
+  kafka_consumer: <span class="cm"># Python consumer (nginx 로그 → Kafka)</span>
+  elasticsearch: <span class="cm"># 검색 인덱싱</span>
+  logstash:     <span class="cm"># Kafka → Elasticsearch</span>
+  ollama:       <span class="cm"># 로컬 AI (EXAONE 4.0)</span>
+  n8n:          <span class="cm"># 워크플로우 자동화</span></pre>
+
+<h3>Nginx 라우팅</h3>
+<pre>madayblog.com/      → Next.js 앱 (3000)
+madayblog.com/v2/   → Spring Boot V2 (8081)
+madayblog.com/v3/   → Spring Boot V3 (8082)</pre>
+
+<h3>Dockerfile (Next.js)</h3>
+<pre><span class="cm"># Stage 1: 빌드</span>
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+<span class="cm"># Stage 2: 실행</span>
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+EXPOSE 3000
+CMD ["node", "server.js"]</pre>
+
+<h3>환경 변수 (.env)</h3>
+<pre>MONGO_URI=mongodb://user:pass@mongodb:27017/maBlog_DataTable?authSource=admin
+GITHUB_ID=...             <span class="cm"># GitHub OAuth App Client ID</span>
+GITHUB_SECRET=...         <span class="cm"># GitHub OAuth App Client Secret</span>
+GIT_ADMIN_ID=...          <span class="cm"># 관리자 GitHub user.id (숫자)</span>
+AUTH_SECRET=...           <span class="cm"># JWT 서명 시크릿</span>
+NEXTAUTH_URL=https://madayblog.com</pre>
+</div>
+
+</div>
+</body>
+</html>
