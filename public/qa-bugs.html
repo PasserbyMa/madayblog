@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>버그 리포트 — 이학송 QA 포트폴리오</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Inconsolata:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+:root {
+  --green:  #00ff41;
+  --green2: #00c832;
+  --dim:    #5aaa6a;
+  --dimmer: #3a6a46;
+  --bg:     #000000;
+  --bg2:    #020802;
+  --card:   #050f05;
+  --border: rgba(0,255,65,0.2);
+  --white:  #e8ffe8;
+  --red:    #ff4444;
+  --amber:  #e3b341;
+}
+
+body {
+  background: var(--bg);
+  color: var(--green);
+  font-family: 'Inconsolata', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.65;
+  cursor: crosshair;
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.08), rgba(0,0,0,0.3) 1px, transparent 2px);
+  background-size: 100% 4px;
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background:#000; border-left:1px solid var(--border); }
+::-webkit-scrollbar-thumb { background: var(--green2); }
+
+a { color: var(--green); text-decoration: none; }
+a:hover { text-decoration: underline dashed; }
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 0 32px; height: 36px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  font-size: 11px; color: var(--dimmer); letter-spacing: 0.06em;
+}
+.tb-blink { animation: blink 1.2s step-start infinite; color: var(--green); }
+.tb-back {
+  font-size: 12px; color: var(--dim);
+  border: 1px solid var(--border); padding: 3px 12px;
+}
+.tb-back:hover { border-color: var(--green); color: var(--green); text-decoration: none; }
+
+/* ── HEADER ── */
+.page-header {
+  padding: 36px 40px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.page-header .cmd { font-size: 12px; color: var(--dimmer); margin-bottom: 8px; }
+.page-header h1 {
+  font-family: 'VT323', monospace;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--white); letter-spacing: 0.06em;
+  text-shadow: 0 0 8px rgba(0,255,65,0.4);
+  margin-bottom: 6px;
+}
+.page-header .sub { font-size: 12px; color: var(--dim); }
+.page-header .sub span { color: var(--green); }
+
+/* ── PAGE ── */
+.page { max-width: 860px; margin: 0 auto; padding: 0 40px 80px; }
+@media(max-width:560px) { .page { padding: 0 20px 60px; } }
+
+.section { padding-top: 48px; }
+.sec-cmd { font-family: 'VT323', monospace; font-size: 18px; color: var(--dimmer); margin-bottom: 4px; }
+.sec-cmd span { color: var(--green); }
+.sec-title {
+  font-family: 'VT323', monospace; font-size: 26px; color: var(--white);
+  letter-spacing: 0.05em; margin-bottom: 20px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  text-shadow: 0 0 8px rgba(0,255,65,0.4);
+}
+.divider { border: none; border-top: 1px solid var(--border); margin-top: 48px; }
+
+/* ── BUG CARD ── */
+.bug-card {
+  border: 1px solid var(--border);
+  background: var(--card);
+  margin-bottom: 16px;
+}
+.bug-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  padding: 10px 18px;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+}
+.bug-id {
+  font-family: 'VT323', monospace; font-size: 20px; letter-spacing: 0.08em;
+}
+.bug-id-critical { color: var(--red); text-shadow: 0 0 8px rgba(255,60,60,0.5); }
+.bug-id-high     { color: var(--amber); text-shadow: 0 0 8px rgba(227,179,65,0.4); }
+.bug-sev {
+  font-size: 10px; letter-spacing: 0.1em; padding: 3px 10px; border: 1px solid;
+}
+.sev-critical { color: var(--red);   border-color: rgba(255,60,60,0.35);  background: rgba(255,60,60,0.07); }
+.sev-high     { color: var(--amber); border-color: rgba(227,179,65,0.35); background: rgba(227,179,65,0.07); }
+.bug-title {
+  font-family: 'VT323', monospace; font-size: 22px; color: var(--white);
+  padding: 14px 18px 0; letter-spacing: 0.04em;
+  text-shadow: 0 0 6px rgba(0,255,65,0.3);
+}
+.bug-meta {
+  display: flex; flex-wrap: wrap; gap: 20px;
+  padding: 8px 18px 12px; border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--dimmer);
+}
+.bug-meta .val { color: var(--dim); }
+.bug-meta .fixed { color: var(--green); }
+.bug-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.field-label {
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--dimmer); margin-bottom: 5px;
+}
+.steps { display: flex; flex-direction: column; gap: 3px; counter-reset: s; }
+.step { display: flex; gap: 8px; font-size: 13px; color: var(--dim); }
+.step::before { counter-increment: s; content: counter(s)'.'; color: var(--dimmer); flex-shrink:0; width:14px; }
+.expected { font-size: 13px; color: var(--green2); line-height: 1.7; }
+.expected::before { content: '✓  '; }
+.actual { font-size: 13px; color: #ff6666; line-height: 1.7; text-shadow: 0 0 5px rgba(255,80,80,0.3); }
+.actual::before { content: '✗  '; }
+.impact { font-size: 13px; color: var(--dim); display: flex; flex-direction: column; gap: 3px; }
+.impact span::before { content: '· '; color: var(--dimmer); }
+.dev-root {
+  border: 1px solid rgba(0,255,65,0.18); border-left: 2px solid var(--green2);
+  background: rgba(0,255,65,0.03); padding: 14px 16px;
+}
+.dev-root-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green2); margin-bottom: 8px; }
+.dev-root-text { font-size: 13px; color: var(--dim); line-height: 1.8; }
+.dev-root-text strong { color: var(--green); font-weight: 400; }
+.dev-root-text code {
+  background: rgba(0,255,65,0.06); border: 1px solid rgba(0,255,65,0.15);
+  padding: 1px 6px; font-family: 'Inconsolata', monospace; font-size: 12px;
+  color: var(--green);
+}
+
+/* ── COMMUNITY REACTIONS ── */
+.reactions-wrap {
+  margin-top: 14px;
+  border: 1px solid var(--border); border-left: 2px solid var(--amber);
+  background: rgba(227,179,65,0.03);
+}
+.reactions-label {
+  padding: 7px 14px; border-bottom: 1px solid var(--border);
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--amber); background: var(--bg2);
+}
+.reaction-posts { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.post {
+  border: 1px solid var(--border); background: var(--bg2);
+  padding: 10px 14px;
+}
+.post-header {
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;
+}
+.post-site { font-size: 10px; color: var(--dimmer); letter-spacing: 0.06em; }
+.post-nick { font-size: 12px; color: var(--dim); }
+.post-time { font-size: 10px; color: var(--dimmer); }
+.post-rec { font-size: 10px; color: var(--green2); margin-left: auto; }
+.post-body { font-size: 13px; color: var(--dim); line-height: 1.75; }
+.post-body strong { color: var(--white); font-weight: 400; }
+.post-body em { color: var(--green); font-style: normal; }
+.post-replies { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.reply { font-size: 12px; color: var(--dimmer); padding-left: 12px; border-left: 1px solid var(--border); line-height: 1.65; }
+.reply .nick { color: var(--dim); margin-right: 6px; }
+.reply strong { color: var(--green); font-weight: 400; }
+
+/* ── CHARTS ── */
+.chart-box {
+  border: 1px solid var(--border); border-left: 2px solid var(--green2);
+  background: rgba(0,255,65,0.02);
+  margin-top: 14px;
+}
+.chart-box-header {
+  padding: 7px 14px; border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.chart-box-title { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green2); }
+.chart-box-note { font-size: 9px; color: var(--dimmer); letter-spacing: 0.05em; }
+.chart-box-body { padding: 16px 18px; }
+
+.impact-tiles {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px;
+}
+.impact-tile {
+  flex: 1; min-width: 130px;
+  border: 1px solid var(--border); background: var(--bg2);
+  padding: 12px 14px;
+}
+.impact-tile-num {
+  font-family: 'VT323', monospace; font-size: 28px;
+  color: var(--red); letter-spacing: 0.04em; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.impact-tile-num.amber { color: var(--amber); }
+.impact-tile-num.green { color: var(--green); }
+.impact-tile-label { font-size: 10px; color: var(--dimmer); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 5px; }
+
+.timeline-wrap { display: flex; flex-direction: column; gap: 7px; }
+.tl-row { display: flex; align-items: center; gap: 8px; }
+.tl-time { font-size: 10px; color: var(--dimmer); width: 44px; flex-shrink: 0; text-align: right; }
+.tl-bar-track { flex: 1; background: rgba(0,255,65,0.04); border: 1px solid var(--border); height: 22px; position: relative; overflow: hidden; }
+.tl-bar-fill { height: 100%; }
+.tl-bar-label { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--white); white-space: nowrap; }
+
+/* ── FOOTER ── */
+.footer {
+  margin-top: 40px; padding: 18px 40px; text-align: center;
+  font-size: 10px; color: var(--dimmer); letter-spacing: 0.1em; text-transform: uppercase;
+  border-top: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span>BUG-REPORT-DB</span>
+    <span style="color:var(--border)">|</span>
+    <span>TRICKCAL REVIVE</span>
+    <span class="tb-blink">▮</span>
+  </div>
+  <a href="/qa" class="tb-back">← BACK TO PROFILE</a>
+</div>
+
+<div class="page-header">
+  <div class="cmd">> open field_reports/ --analyst=이학송</div>
+  <h1>샘플 버그 리포트</h1>
+  <div class="sub">트릭컬 리바이브 · 실제 발생 버그 기반 · <span>개발자 관점 원인 추론 포함</span></div>
+</div>
+
+<div class="page">
+
+  <!-- BUG-001 -->
+  <div class="section">
+    <div class="sec-cmd">> read <span>BUG-001.report</span></div>
+    <div class="sec-title">// BUG-001 · 엘리프 무한 복제</div>
+
+    <div class="bug-card">
+      <div class="bug-header">
+        <span class="bug-id bug-id-critical">BUG-001</span>
+        <span class="bug-sev sev-critical">CRITICAL · P1</span>
+      </div>
+      <div class="bug-title">왕사탕 최대 보유 상태에서 엘리프 중복 획득 가능</div>
+      <div class="bug-meta">
+        <span>환경 <span class="val">Android / iOS · 전 기기</span></span>
+        <span>발생일 <span class="val">2024-08-29</span></span>
+        <span>상태 <span class="fixed">[ FIXED ]</span></span>
+      </div>
+      <div class="bug-body">
+        <div>
+          <div class="field-label">재현 절차</div>
+          <div class="steps">
+            <div class="step">왕사탕을 최대 보유량까지 수집한다.</div>
+            <div class="step">왕사탕 → 엘리프 교환 가능한 보상 수령 대기 상태를 만든다.</div>
+            <div class="step">엘리프 수령 버튼을 빠르게 연속으로 탭한다.</div>
+            <div class="step">수령 완료 후 엘리프 보유량을 확인한다.</div>
+          </div>
+        </div>
+        <div>
+          <div class="field-label">기대 결과</div>
+          <div class="expected">수령 1회분 엘리프만 지급. 중복 요청은 서버에서 무시된다.</div>
+        </div>
+        <div>
+          <div class="field-label">실제 결과</div>
+          <div class="actual">탭 횟수만큼 엘리프 중복 지급. 최대 악용 사례 5,521회 반복 수령 확인 (3,864,700 엘리프 상당).</div>
+        </div>
+        <div>
+          <div class="field-label">영향도</div>
+          <div class="impact">
+            <span>게임 내 재화 경제 시스템 붕괴 — 정상 플레이어와의 형평성 심각 훼손</span>
+            <span>악용 유저 12명 영구 제재 처리로 커뮤니티 신뢰도 손상</span>
+            <span>회수 불가능한 재화 배포로 장기 밸런스 패치 비용 발생</span>
+          </div>
+        </div>
+        <div class="dev-root">
+          <div class="dev-root-label">[ DEV ] 개발자 관점 원인 추론</div>
+          <div class="dev-root-text">
+            엘리프 지급 API가 요청 수신 시 <strong>서버 측 중복 처리(idempotency) 검증 없이 즉시 실행</strong>된 것으로 추정. 왕사탕 최대치 상태에서 수령 요청이 들어오면 클라이언트 측 UI만 잠기고, 서버는 들어오는 요청을 그대로 처리하는 구조로 보임.<br><br>
+            올바른 대응: 지급 요청에 <code>transactionId</code> 부여 후 서버에서 처리 여부 조회 → 이미 처리된 요청이면 무시. 또는 왕사탕 최대치 도달 여부를 지급 직전 서버에서 재검증.
+          </div>
+        </div>
+
+        <!-- 영향도 시각화 -->
+        <div class="chart-box">
+          <div class="chart-box-header">
+            <span class="chart-box-title">// 영향도 시각화</span>
+            <span class="chart-box-note">공식 공지 · 제재 결과 기반</span>
+          </div>
+          <div class="chart-box-body">
+            <div class="impact-tiles">
+              <div class="impact-tile">
+                <div class="impact-tile-num">5,521</div>
+                <div class="impact-tile-label">악용 시도 횟수</div>
+              </div>
+              <div class="impact-tile">
+                <div class="impact-tile-num amber">12</div>
+                <div class="impact-tile-label">영구 제재 계정</div>
+              </div>
+              <div class="impact-tile">
+                <div class="impact-tile-num" style="font-size:22px;">3,864,700</div>
+                <div class="impact-tile-label">유출 엘리프 (추정)</div>
+              </div>
+            </div>
+            <div class="field-label" style="margin-bottom:9px;">공식 대응 타임라인 — 버그 최초 발견 기준</div>
+            <div class="timeline-wrap">
+              <div class="tl-row">
+                <span class="tl-time">T +0</span>
+                <div class="tl-bar-track">
+                  <div class="tl-bar-fill" style="width:1%;background:var(--green);"></div>
+                  <span class="tl-bar-label">14:22 · 버그 최초 발견 (커뮤니티)</span>
+                </div>
+              </div>
+              <div class="tl-row">
+                <span class="tl-time">+79분</span>
+                <div class="tl-bar-track">
+                  <div class="tl-bar-fill" style="width:10%;background:var(--amber);opacity:0.7;"></div>
+                  <span class="tl-bar-label">15:41 · 공식 긴급 공지 발송</span>
+                </div>
+              </div>
+              <div class="tl-row">
+                <span class="tl-time">+398분</span>
+                <div class="tl-bar-track">
+                  <div class="tl-bar-fill" style="width:52%;background:var(--red);opacity:0.6;"></div>
+                  <span class="tl-bar-label">21:00 · 긴급 점검 시작</span>
+                </div>
+              </div>
+              <div class="tl-row">
+                <span class="tl-time">+760분</span>
+                <div class="tl-bar-track">
+                  <div class="tl-bar-fill" style="width:100%;background:var(--dim);opacity:0.5;"></div>
+                  <span class="tl-bar-label">익일 05:00 · 점검 완료 · 서비스 재개</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- BUG-002 -->
+  <div class="section">
+    <div class="sec-cmd">> read <span>BUG-002.report</span></div>
+    <div class="sec-title">// BUG-002 · 친밀도 스탯 누적 오류</div>
+
+    <div class="bug-card">
+      <div class="bug-header">
+        <span class="bug-id bug-id-high">BUG-002</span>
+        <span class="bug-sev sev-high">HIGH · P1</span>
+      </div>
+      <div class="bug-title">친밀도 레벨업 시 치명타 스탯 약 5.5배 누적 증가</div>
+      <div class="bug-meta">
+        <span>환경 <span class="val">Android / iOS · 전 기기</span></span>
+        <span>발생일 <span class="val">2023-10-04</span></span>
+        <span>수정 완료 <span class="val">2023-10-05 (이틀 이내)</span></span>
+        <span>상태 <span class="fixed">[ FIXED ]</span></span>
+      </div>
+      <div class="bug-body">
+        <div>
+          <div class="field-label">재현 절차</div>
+          <div class="steps">
+            <div class="step">특정 캐릭터의 친밀도 레벨업 전 치명타 관련 스탯 수치를 기록한다.</div>
+            <div class="step">해당 캐릭터 친밀도를 1레벨 올린다.</div>
+            <div class="step">레벨업 직후 치명타 스탯 수치를 확인한다.</div>
+            <div class="step">예상 증가분과 실제 증가분을 비교한다.</div>
+          </div>
+        </div>
+        <div>
+          <div class="field-label">기대 결과</div>
+          <div class="expected">치명타 스탯이 해당 레벨의 증가분(delta)만큼 정확히 상승한다.</div>
+        </div>
+        <div>
+          <div class="field-label">실제 결과</div>
+          <div class="actual">치명타 스탯이 의도치 않게 약 5.5배 누적 증가. 레벨이 높아질수록 오차 폭이 더 커짐.</div>
+        </div>
+        <div>
+          <div class="field-label">영향도</div>
+          <div class="impact">
+            <span>특정 캐릭터 전투력 비정상 과대 적용 → 콘텐츠 난이도 급락</span>
+            <span>친밀도 육성 투자 유저와 미투자 유저 간 밸런스 파괴</span>
+            <span>수정 후 스탯 정상화 시 기존 클리어 콘텐츠 재도전 불가 상황 발생 가능</span>
+          </div>
+        </div>
+        <div class="dev-root">
+          <div class="dev-root-label">[ DEV ] 개발자 관점 원인 추론</div>
+          <div class="dev-root-text">
+            친밀도 레벨업 이벤트 핸들러에서 <strong>스탯 적용 방식이 delta가 아닌 누적값 재가산</strong>으로 구현된 것으로 추정.<br><br>
+            올바른 구현: <code>newStat = prevStat + (bonus[N] - bonus[N-1])</code><br>
+            추정 실제 구현: <code>newStat = prevStat + bonus[N]</code><br><br>
+            이 경우 레벨업마다 이전 레벨까지의 보너스가 중복 가산되어, 레벨이 높아질수록 오차가 선형이 아닌 <strong>누적 증폭</strong>됨. 또는 레벨업 이벤트 핸들러가 다중 트리거되는 구조일 가능성도 있음.
+          </div>
+        </div>
+
+        <!-- 스탯 오차 시각화 -->
+        <div class="chart-box">
+          <div class="chart-box-header">
+            <span class="chart-box-title">// 친밀도 레벨별 치명타 스탯 오차</span>
+            <span class="chart-box-note">추정 데이터 · 공개 정보 재구성 · base bonus = 10/레벨</span>
+          </div>
+          <div class="chart-box-body">
+            <canvas id="statChart" height="180"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 분석 노트 -->
+  <div class="section">
+    <div class="sec-cmd">> cat <span>analyst_notes.txt</span></div>
+    <div class="sec-title">// QA 관점 분석 메모</div>
+    <div style="border:1px solid var(--border);background:var(--card);padding:22px 24px;display:flex;flex-direction:column;gap:14px;">
+      <div style="font-size:13px;color:var(--dim);line-height:1.85;">
+        <div style="color:var(--dimmer);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:8px;">두 버그의 공통점</div>
+        두 케이스 모두 <strong style="color:var(--green);font-weight:400">"경계 조건에서 서버 검증이 빠진" 패턴</strong>입니다. BUG-001은 최대 보유량 도달 시 지급 API 재검증 누락, BUG-002는 스탯 계산 공식의 적분/미분 혼동.
+        <br><br>
+        개발 관점에서 두 버그 모두 <strong style="color:var(--green);font-weight:400">단위 테스트(Unit Test)</strong>가 있었다면 배포 전에 잡혔을 가능성이 높습니다. QA 입장에서는 경계값 테스트 케이스 — 최대치, 최소치, 레벨 전환점 — 를 체크리스트에 필수 항목으로 넣는 것이 핵심입니다.
+      </div>
+      <div style="font-size:13px;color:var(--dim);line-height:1.85;">
+        <div style="color:var(--dimmer);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:8px;">개발자 출신 QA의 강점</div>
+        <strong style="color:var(--green);font-weight:400">원인 레벨의 분석이 가능한 버그 리포트</strong>는 개발팀의 수정 시간을 단축합니다. "이렇게 됩니다"가 아닌 "왜 이렇게 됐는지, 어디를 보면 되는지"까지 담긴 리포트가 QA의 실질적 가치입니다.
+      </div>
+    </div>
+  </div>
+
+
+  <div style="margin-top:48px;text-align:center;">
+    <a href="/qa" style="display:inline-block;border:1px solid var(--green);color:var(--green);padding:10px 28px;font-family:'VT323',monospace;font-size:18px;letter-spacing:0.1em;">← BACK TO PROFILE</a>
+  </div>
+
+</div>
+
+<div class="footer">이학송 · 버그 리포트 포트폴리오 · 에피드게임즈 파티마팀 지원 · 2026</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color = '#5aaa6a';
+Chart.defaults.font.family = "'Inconsolata', 'Courier New', monospace";
+Chart.defaults.font.size = 11;
+
+const C = {
+  green: '#00ff41', green2: '#00c832', red: '#ff4444',
+  amber: '#e3b341', dim: '#5aaa6a', dimmer: '#3a6a46',
+  grid: 'rgba(0,255,65,0.08)',
+};
+
+// BUG-002: stat divergence line chart
+const statCtx = document.getElementById('statChart');
+if (statCtx) {
+  const levels = [1,2,3,4,5,6,7,8,9,10];
+  const base = 10;
+  const expected = levels.map(l => l * base);
+  const actual   = levels.map(l => (l * (l + 1) / 2) * base);
+  new Chart(statCtx, {
+    type: 'line',
+    data: {
+      labels: levels.map(l => 'Lv.' + l),
+      datasets: [
+        {
+          label: '기대값 (설계)',
+          data: expected,
+          borderColor: C.green2,
+          backgroundColor: 'rgba(0,200,50,0.06)',
+          pointBackgroundColor: C.green2,
+          pointRadius: 4,
+          tension: 0,
+        },
+        {
+          label: '실제값 (버그)',
+          data: actual,
+          borderColor: C.red,
+          backgroundColor: 'rgba(255,68,68,0.07)',
+          pointBackgroundColor: C.red,
+          pointRadius: 4,
+          tension: 0,
+          borderDash: [5, 3],
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: C.dim, usePointStyle: true, pointStyleWidth: 8 } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const suffix = ctx.datasetIndex === 1
+                ? ' (×' + (actual[ctx.dataIndex] / expected[ctx.dataIndex]).toFixed(1) + ')'
+                : '';
+              return ctx.dataset.label + ': ' + ctx.parsed.y + suffix;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: C.grid }, ticks: { color: C.dimmer } },
+        y: {
+          grid: { color: C.grid },
+          ticks: { color: C.dimmer },
+          title: { display: true, text: '치명타 스탯 보너스', color: C.dimmer, font: { size: 10 } }
+        }
+      }
+    }
+  });
+}
+
+</script>
+
+</body>
+</html>
