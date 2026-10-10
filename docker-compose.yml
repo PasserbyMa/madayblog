@@ -1,25 +1,5 @@
 services:
-    # --------------------------
-    # MongoDB
-    # --------------------------
-    db:
-        image: mongo:7.0
-        container_name: mablog_mongodb
-        restart: always
-        # MCP 연동을 위해 localhost에만 포트 노출 (외부 접근 불가)
-        ports:
-            - "127.0.0.1:27017:27017"
-        # ports 추가 전 원본 (포트 노출 없음):
-        # (ports 항목 없음 — Docker 내부 네트워크에서만 접근 가능)
-        volumes:
-            - ./mongo_data:/data/db
-            - ./backup:/tmp/backup
-        environment:
-            MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
-            MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-            MONGO_INITDB_DATABASE: maBlog_DataTable
-        networks:
-            - mablog_network
+    # MongoDB는 /home/ubuntu/db 로 분리됨 (2026-10-10). 접속명 db / mablog_mongodb (db_network)
 
     # --------------------------
     # Next.js
@@ -41,11 +21,10 @@ services:
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - /opt/ma_blog/read_os:/opt/ma_blog/read_os
-        depends_on:
-            - db
         networks:
             - mablog_network
             - proxy_network   # 공용 nginx(/home/ubuntu/proxy)와 연결
+            - db_network      # 공용 DB(/home/ubuntu/db)와 연결
 
     # nginx + certbot은 /home/ubuntu/proxy 로 분리됨 (2026-10-10)
 
@@ -103,6 +82,7 @@ services:
             - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro  # 기본 설정
             - ./logstash/pipeline:/usr/share/logstash/pipeline:ro                 # 파이프라인 설정
             - /home/ubuntu/proxy/logs:/var/log/nginx:ro                                       # nginx 로그 읽기 전용
+            - ./logstash/sincedb:/usr/share/logstash/sincedb                       # 읽은 위치 저장 (재시작해도 이어서 읽음)
         environment:
             - LS_JAVA_OPTS=-Xms256m -Xmx256m
         depends_on:
@@ -146,10 +126,10 @@ services:
             - MONGO_DB=maBlog_DataTable
             - MONGO_COLLECTION=visitor_stats
         depends_on:
-            - db
             - mablog_kafka
         networks:
             - mablog_network
+            - db_network      # 공용 DB(/home/ubuntu/db)와 연결
 
     # --------------------------
     # Ollama (로컬 AI 모델 서버)
@@ -190,4 +170,6 @@ networks:
     mablog_network:
         driver: bridge
     proxy_network:
+        external: true
+    db_network:
         external: true

@@ -63,3 +63,5 @@ certbot/www/
 # MCP 설정 (API 키, 토큰 포함)
 # ==================================================
 .mcp.json
+# logstash 읽은 위치 기록
+logstash/sincedb/
