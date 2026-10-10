@@ -7,7 +7,10 @@
 OCI_USER="ubuntu"
 OCI_HOST="129.154.55.20"
 BLOG_URL="https://madayblog.com"
-API_KEY="ebab091fbb70a3dc84f3a615b467a2f4bae01718e054f1a208110a25dee22ef2"
+# 비밀값은 Pi의 ~/backup/.pi_backup.env 에서 읽음 (git에 올리지 않음)
+#   API_KEY=...            블로그 INTERNAL_API_KEY
+#   MONGO_PASSWORD=...     mablog_mongodb root 비밀번호
+source "$HOME/backup/.pi_backup.env"
 BACKUP_BASE="/home/makecool0/backups"
 KEEP_DAYS=7
 
@@ -21,7 +24,7 @@ BACKUP_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 # ── 2. OCI 서버에서 mongodump 실행 후 Pi로 전송 ──────────────────
 ssh -o StrictHostKeyChecking=no ${OCI_USER}@${OCI_HOST} \
     "docker exec mablog_mongodb mongodump \
-        --uri='mongodb://mongoAdmin:mongoA96547852!@localhost:27017/maBlog_DataTable?authSource=admin' \
+        --uri='mongodb://mongoAdmin:${MONGO_PASSWORD}@localhost:27017/maBlog_DataTable?authSource=admin' \
         --out=/tmp/mablog_dump --quiet && \
      docker cp mablog_mongodb:/tmp/mablog_dump /tmp/mablog_dump_host && \
      tar -czf /tmp/mablog_backup.tar.gz -C /tmp mablog_dump_host && \

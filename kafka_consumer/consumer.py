@@ -19,7 +19,7 @@ from pymongo.errors import ConnectionFailure
 KAFKA_BOOTSTRAP   = os.getenv("KAFKA_BOOTSTRAP", "mablog_kafka:9092")
 KAFKA_TOPIC       = os.getenv("KAFKA_TOPIC", "nginx-logs")
 KAFKA_GROUP_ID    = os.getenv("KAFKA_GROUP_ID", "visitor-stats-consumer")
-MONGO_URI         = os.getenv("MONGO_URI", "mongodb://mongoAdmin:mongoA96547852!@db:27017/maBlog_DataTable?authSource=admin")
+MONGO_URI         = os.environ["MONGO_URI"]  # docker-compose에서 주입 (비밀번호는 mam/.env)
 MONGO_DB          = os.getenv("MONGO_DB", "maBlog_DataTable")
 MONGO_COLLECTION  = os.getenv("MONGO_COLLECTION", "visitor_stats")
 

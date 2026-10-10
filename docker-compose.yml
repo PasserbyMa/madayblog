@@ -15,8 +15,8 @@ services:
             - ./mongo_data:/data/db
             - ./backup:/tmp/backup
         environment:
-            MONGO_INITDB_ROOT_USERNAME: mongoAdmin
-            MONGO_INITDB_ROOT_PASSWORD: mongoA96547852!
+            MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
             MONGO_INITDB_DATABASE: maBlog_DataTable
         networks:
             - mablog_network
@@ -36,6 +36,7 @@ services:
             - ./.env.production
         environment:
             - HOST=0.0.0.0
+            - HOSTNAME=0.0.0.0   # Next.js standalone은 HOSTNAME으로 바인딩 → 모든 네트워크에서 수신
             - PORT=8080
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
@@ -44,48 +45,9 @@ services:
             - db
         networks:
             - mablog_network
+            - proxy_network   # 공용 nginx(/home/ubuntu/proxy)와 연결
 
-    # --------------------------
-    # Nginx Reverse Proxy
-    # --------------------------
-    mablog_proxy:
-        image: nginx:stable-alpine
-        container_name: mablog_proxy
-        restart: always
-        ports:
-            - '80:80'
-            - '443:443'
-        volumes:
-            - ./nginx.conf:/etc/nginx/nginx.conf:ro
-            - ./certbot/www:/var/www/certbot
-            - ./certbot/conf:/etc/letsencrypt
-            - ./nginx_logs:/var/log/nginx   # Logstash가 읽을 로그 파일 공유
-        depends_on:
-            - mablog_nextjs
-        networks:
-            - mablog_network
-
-    # --------------------------
-    # Certbot (자동 갱신 전용)
-    # --------------------------
-    certbot:
-        image: certbot/certbot
-        container_name: certbot
-        restart: unless-stopped
-        volumes:
-            - ./certbot/www:/var/www/certbot
-            - ./certbot/conf:/etc/letsencrypt
-        entrypoint: >
-            sh -c "trap exit TERM;
-            while :; do
-              certbot renew
-                --webroot -w /var/www/certbot
-                --non-interactive
-                --quiet;
-              sleep 12h;
-            done"
-        networks:
-            - mablog_network
+    # nginx + certbot은 /home/ubuntu/proxy 로 분리됨 (2026-10-10)
 
     # --------------------------
     # Kafka (KRaft 모드: Zookeeper 없이 단독 실행)
@@ -140,7 +102,7 @@ services:
         volumes:
             - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro  # 기본 설정
             - ./logstash/pipeline:/usr/share/logstash/pipeline:ro                 # 파이프라인 설정
-            - ./nginx_logs:/var/log/nginx:ro                                       # nginx 로그 읽기 전용
+            - /home/ubuntu/proxy/logs:/var/log/nginx:ro                                       # nginx 로그 읽기 전용
         environment:
             - LS_JAVA_OPTS=-Xms256m -Xmx256m
         depends_on:
@@ -180,7 +142,7 @@ services:
             - KAFKA_BOOTSTRAP=mablog_kafka:9092
             - KAFKA_TOPIC=nginx-logs
             - KAFKA_GROUP_ID=visitor-stats-consumer
-            - MONGO_URI=mongodb://mongoAdmin:mongoA96547852!@db:27017/maBlog_DataTable?authSource=admin
+            - MONGO_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@db:27017/maBlog_DataTable?authSource=admin
             - MONGO_DB=maBlog_DataTable
             - MONGO_COLLECTION=visitor_stats
         depends_on:
@@ -227,3 +189,5 @@ services:
 networks:
     mablog_network:
         driver: bridge
+    proxy_network:
+        external: true
